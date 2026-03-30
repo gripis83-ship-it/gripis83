@@ -203,7 +203,6 @@
 
     .m-img { display: flex; align-items: center; justify-content: center; position: relative; background-size: cover; background-position: center; background-repeat: no-repeat; width: 100%; }
     
-    /* ★ 크기 500px로 수정 완료 ★ */
     .m-card.large .m-img { height: 500px; }
     .m-card.medium .m-img { height: 220px; }
     .m-card.small .m-img { height: 190px; }
@@ -287,6 +286,40 @@
     .author-info { font-size: 13px; color: rgba(249, 245, 236, 0.5); }
     .author-info strong { color: var(--pearl); display: block; margin-bottom: 2px; font-weight: 500; }
 
+    /* ── HAEDONGJE (해동제 제휴 모집) ── */
+    #haedongje { background: var(--deep); padding: 120px 0; border-bottom: 1px solid rgba(180, 157, 106, 0.08); width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .hd-inner { max-width: 1000px; margin: 0 auto; padding: 0 56px; width: 100%; }
+    .hd-header { text-align: center; margin-bottom: 50px; }
+    .hd-quote { font-family: 'Noto Serif KR', serif; font-size: clamp(24px, 3vw, 36px); font-weight: 600; color: var(--seafoam); line-height: 1.5; margin: 32px 0 24px; word-break: keep-all; letter-spacing: -0.5px; }
+    .hd-desc { font-size: 16px; color: rgba(249, 245, 236, 0.7); line-height: 1.8; font-weight: 300; word-break: keep-all; text-align: center; margin-bottom: 60px; }
+    .hd-desc strong { color: var(--pearl); font-weight: 600; }
+    .hd-desc blockquote { display: inline-block; padding: 16px 24px; margin: 24px 0; border-left: 2px solid var(--aqua); background: rgba(180, 157, 106, 0.05); color: var(--pearl); font-size: 18px; font-style: italic; }
+
+    .hd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 60px; }
+    .hd-card { background: var(--ocean); border: 1px solid rgba(180, 157, 106, 0.15); border-radius: 20px; padding: 40px; transition: transform 0.3s, border-color 0.3s; }
+    .hd-card:hover { transform: translateY(-5px); border-color: rgba(180, 157, 106, 0.4); }
+    .hd-num { font-family: 'DM Serif Display', serif; font-size: 40px; color: var(--aqua); opacity: 0.3; line-height: 1; margin-bottom: 20px; }
+    .hd-card-title { font-size: 18px; font-weight: 700; color: var(--pearl); margin-bottom: 16px; word-break: keep-all; line-height: 1.4; }
+    .hd-card-desc { font-size: 15px; color: rgba(249, 245, 236, 0.6); line-height: 1.7; word-break: keep-all; }
+    .hd-card-desc strong { color: var(--seafoam); font-weight: 500; }
+
+    .hd-banner { background: linear-gradient(135deg, rgba(8, 45, 27, 0.8), rgba(16, 63, 41, 0.8)); border: 1px solid rgba(180, 157, 106, 0.2); border-radius: 20px; padding: 40px; margin-bottom: 24px; }
+    .hd-banner-title { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 700; color: var(--pearl); margin-bottom: 16px; }
+    .hd-banner-desc { font-size: 15px; color: rgba(249, 245, 236, 0.7); line-height: 1.7; word-break: keep-all; }
+    .hd-banner-desc strong { color: var(--pearl); font-weight: 600; }
+    
+    .hd-warning { border-color: rgba(212, 175, 55, 0.4); background: rgba(3, 26, 16, 0.6); }
+    .hd-warning .hd-banner-title { color: var(--gold); }
+    .hd-warning .hd-banner-desc strong { color: #ff8b8b; }
+
+    .hd-target { text-align: center; margin: 80px 0 60px; }
+    .hd-target-text { font-size: 17px; color: rgba(249, 245, 236, 0.8); line-height: 1.8; margin-bottom: 40px; font-weight: 300; word-break: keep-all; }
+    .hd-target-text strong { color: var(--pearl); font-weight: 600; }
+
+    .hd-faq-wrap { border-top: 1px solid rgba(180, 157, 106, 0.15); padding-top: 60px; }
+    .hd-faq-title { font-family: 'Noto Serif KR', serif; font-size: 28px; font-weight: 700; color: var(--pearl); text-align: center; margin-bottom: 40px; }
+    .hd-faq-list { display: flex; flex-direction: column; gap: 12px; }
+
     /* ── LOCATION ── */
     #location { background: var(--navy); border-top: 1px solid rgba(180, 157, 106, 0.08); padding: 120px 0; width: 100%; }
     .loc-inner { max-width: 1440px; margin: 0 auto; padding: 0 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
@@ -299,7 +332,7 @@
     .facility-wrap { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; margin-bottom: 36px; }
     .facility-item { display: flex; align-items: center; gap: 8px; background: rgba(3, 26, 16, 0.5); border: 1px solid rgba(180, 157, 106, 0.15); padding: 10px 14px; border-radius: 8px; font-size: 12px; color: var(--mist); white-space: nowrap; }
 
-    /* ── FAQ ── */
+    /* ── FAQ (기존 고객용) ── */
     #faq { background: var(--deep); border-top: 1px solid rgba(180, 157, 106, 0.08); padding: 120px 0; width: 100%; display: flex; justify-content: center; }
     .faq-layout { display: grid; grid-template-columns: 350px 1fr; gap: 60px; align-items: start; max-width: 1440px; width: 100%; padding: 0 56px; }
     .faq-left { position: sticky; top: 100px; }
@@ -415,10 +448,14 @@
       .stat-n { font-size: 28px; }
       .s-title { font-size: 28px; text-align: center; }
       
-      .menu-grid, .classic-grid, .review-grid, .footer-grid { grid-template-columns: 1fr; }
+      .menu-grid, .classic-grid, .review-grid, .footer-grid, .hd-grid { grid-template-columns: 1fr; }
       
       .story-quote { font-size: 24px; text-align: center; }
       .story-main-card { font-size: 100px; aspect-ratio: 1/1; }
+
+      .hd-inner { padding: 0 20px; }
+      .hd-quote { font-size: 20px; }
+      .hd-card, .hd-banner { padding: 30px 20px; }
 
       .loc-title { font-size: 28px; }
       .press-name { font-size: 13px; }
@@ -449,6 +486,7 @@
       <li><a href="#story">스토리</a></li>
       <li><a href="#categories">카테고리</a></li>
       <li><a href="#reviews">고객 리뷰</a></li>
+      <li><a href="#haedongje">해동제 제휴</a></li>
       <li><a href="#location">오시는 길</a></li>
       <li><a href="#faq">FAQ</a></li>
     </ul>
@@ -849,6 +887,162 @@
     </div>
   </section>
 
+  <section id="haedongje">
+    <div class="hd-inner">
+      <div class="hd-header reveal">
+        <div class="s-tag" style="justify-content:center;">해동제 파트너십</div>
+        <h2 class="s-title">해동제<br/><span class="italic teal">브랜드 제휴 모집</span></h2>
+        
+        <p class="hd-quote">
+          "요리 27년. 미역국 하나에 모든 것을 건<br/>사람이 드리는 제안입니다."
+        </p>
+        
+        <div class="hd-desc">
+          저는 현재 경기도 광명 일직동에서 미역국 전문점 <strong>본초미역</strong>을 운영하고 있는 두바입니다.<br/>
+          27년간 주방을 지키며 한 가지를 배웠습니다.
+          <br/>
+          <blockquote>좋은 장사는 오래 버티는 것에서 시작된다.</blockquote>
+          <br/>
+          그런데 지금의 외식 창업 시장은 시작부터 버티기 어렵게 설계되어 있습니다.<br/>
+          가맹비, 교육비, 기술 전수비, 로열티, 그리고 본사 마진이 두껍게 얹힌 인테리어 비용까지.<br/>
+          창업자는 빚을 짊어지고 문을 열기도 전에 이미 지쳐버립니다.<br/><br/>
+          저는 그 구조가 잘못됐다고 생각합니다.<br/>
+          그래서 <strong>해동제</strong>를 다르게 설계했습니다.
+        </div>
+      </div>
+
+      <div class="hd-grid">
+        <div class="hd-card reveal">
+          <div class="hd-num">01</div>
+          <div class="hd-card-title">본사가 받는 초기 창업 비용, 단 1원도 없습니다</div>
+          <div class="hd-card-desc">
+            가맹비, 교육비, 기술 전수비, 상표 로열티 — 모두 없습니다. 해동제는 프랜차이즈가 아닙니다. 점주님이 준비하신 자본은 오직 하나, <strong>내 매장을 열고 버티는 데</strong>만 쓰셔야 합니다.
+          </div>
+        </div>
+        <div class="hd-card reveal d1">
+          <div class="hd-num">02</div>
+          <div class="hd-card-title">인테리어에서도 본사 마진은 0원입니다</div>
+          <div class="hd-card-desc">
+            일반 프랜차이즈는 지정 업체를 통해 인테리어 비용에서 조용히 수익을 냅니다. 해동제는 그렇게 하지 않습니다. <strong>점주님 + 시공업자 + 저(기획자), 3자가 직접 대면</strong>해 투명하게 실비 견적으로 진행합니다. 27년 주방 경험으로 설계한 효율적인 동선 가이드도 직접 잡아드립니다.
+          </div>
+        </div>
+        <div class="hd-card reveal">
+          <div class="hd-num">03</div>
+          <div class="hd-card-title">본사의 유일한 수익은 소스 납품입니다 — 그것도 아주 저렴하게</div>
+          <div class="hd-card-desc">
+            제가 돈을 버는 방법은 딱 하나입니다. 해동제 프리미엄 미역국 소스를 납품하는 것. 1통(1,200g / 약 55인분 기준) <strong>5만 원</strong>, 즉 <strong>1인분당 원가 약 910원</strong>입니다. 점주님 매장이 잘 돼야 저도 삽니다. 이것이 진짜 상생입니다.
+          </div>
+        </div>
+        <div class="hd-card reveal d1">
+          <div class="hd-num">04</div>
+          <div class="hd-card-title">광명 본초미역의 실전 운영 시스템을 100% 그대로 전수합니다</div>
+          <div class="hd-card-desc">
+            요리 경험이 없어도 괜찮습니다. 새벽부터 복잡한 육수를 낼 필요도 없습니다. 조리 매뉴얼, 식자재 관리, 홀 접객 노하우까지 <strong>현재 단골이 줄 서는 매장의 시스템</strong>을 그대로 이식해 드립니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="hd-banner reveal">
+        <div class="hd-banner-title">📣 온라인 밀키트와 오프라인 매장이 함께 성장합니다</div>
+        <div class="hd-banner-desc">
+          해동제는 프리미엄 밀키트 온라인 시장에도 본격 진출합니다. 전국의 소비자가 집에서 해동제의 맛을 먼저 경험합니다. 그리고 <strong>갓 끓인 한 뚝배기</strong>를 맛보고 싶어 가까운 오프라인 매장을 찾게 됩니다. 본사가 비용을 들여 브랜드를 알리고, 점주님은 그 효과를 매장에서 그대로 누리십니다.
+        </div>
+      </div>
+
+      <div class="hd-banner hd-warning reveal">
+        <div class="hd-banner-title">⚠️ 단, 이것 하나는 반드시 지켜주셔야 합니다</div>
+        <div class="hd-banner-desc">
+          초기 비용을 전액 면제하는 대신, <strong>브랜드 품질에 대한 타협은 없습니다.</strong> 지정 소스를 임의로 변경하거나, 위생·조리 매뉴얼을 위반하면 <strong>투 스트라이크 아웃</strong> — 2회 적발 시 계약 즉시 해지, 7일 내 간판 철거입니다. 이 원칙은 원칙을 지키는 점주님들을 보호하기 위한 장치입니다.
+        </div>
+      </div>
+
+      <div class="hd-target reveal">
+        <div class="hd-target-text">
+          저는 수백 개 매장을 만들 생각이 없습니다.<br/>
+          <strong>제가 직접 퀄리티를 관리하고 멘토링할 수 있는 한정된 수의 매장</strong>만 함께합니다.<br/><br/>
+          해동제와 함께하시는 분은 단순한 거래처가 아닙니다.<br/>
+          프리미엄 미역국이라는 가치를 함께 증명해갈 <strong>동반자</strong>입니다.<br/><br/>
+          진심 어린 한 그릇의 힘을 믿으신다면,<br/>오래 버텨 마침내 이기는 자영업을 꿈꾸신다면,<br/><strong>지금 연락 주십시오.</strong>
+        </div>
+      </div>
+
+      <div class="hd-faq-wrap reveal">
+        <h3 class="hd-faq-title">📌 [FAQ] 예비 점주가 자주 묻는 질문</h3>
+        <div class="hd-faq-list">
+          <div class="faq-item open">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q1. 초기 창업 비용이 정말 0원인가요? 숨겨진 비용이 있는 건 아닌가요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>해동제 본사로 납부하셔야 하는 비용은 단 1원도 없습니다. 일반 프랜차이즈가 요구하는 가맹비, 교육비, 기술 전수비, 상표 로열티, 이 모든 항목이 없습니다. 점주님의 자본은 상가 임대차 보증금, 실비 인테리어, 초기 식자재 구매 등 <strong>오직 내 매장을 여는 데에만</strong> 쓰입니다.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q2. 인테리어는 본사 지정 업체를 통해 비싸게 해야 하나요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>아닙니다. 해동제는 인테리어에서 어떤 마진도 남기지 않습니다. 점주님, 시공업자, 저(기획자) <strong>3자가 직접 대면</strong>해 실비 견적으로 진행합니다. 거기에 더해, 27년 현장 경험을 바탕으로 설계한 <strong>효율적인 주방 동선 가이드</strong>를 직접 제공합니다. 인테리어 비용을 아낀 만큼, 초반 운영 체력이 늘어납니다.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q3. 그렇다면 본사는 어떻게 수익을 내나요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>오직 <strong>해동제 프리미엄 미역국 소스 납품</strong> 하나입니다. 1통(1,200g, 약 55인분 기준)에 <strong>50,000원</strong>, 1인분당 원가 약 <strong>910원</strong> 수준입니다. 점주님 매장이 잘돼야 본사도 수익이 납니다. 이것이 구조적으로 설계된 상생입니다.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q4. 나중에 장사가 잘되면 소스 단가를 올리지 않을까요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>점주님의 매출이 오른다고 해서 단가를 올리는 일은 없습니다. 납품 단가는 <strong>고정이 원칙</strong>입니다. 단, 농수산물 등 핵심 원자재의 도매 물가가 <strong>전년 대비 15% 이상</strong> 폭등해 기존 단가 유지가 불가능할 경우에 한해, 원가를 투명하게 공개하고 상호 협의 하에 조정하는 <strong>물가 연동제</strong>를 계약서에 명시합니다. 물가가 안정되면 단가도 다시 내려갑니다.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q5. 요리나 식당 운영 경험이 전혀 없어도 창업이 가능한가요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>가능합니다. 복잡한 육수 작업 없이, 제공되는 프리미엄 소스가 맛의 중심을 잡아줍니다. 조리 매뉴얼, 식자재 관리법, 홀 접객 노하우까지 — <strong>광명 본초미역에서 실제로 운영 중인 시스템 그대로</strong>를 전수해 드립니다. 매뉴얼대로만 따라오시면 초보자도 일관된 품질을 유지할 수 있습니다.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q6. 온라인 밀키트가 오프라인 매장 매출을 빼앗아 가지 않나요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>오히려 반대입니다. 온라인 밀키트는 전국 소비자에게 해동제 브랜드를 먼저 알리는 역할을 합니다. 집에서 맛을 경험한 고객은 <strong>갓 끓인 뚝배기를 먹고 싶어</strong> 가까운 오프라인 매장을 찾게 됩니다. 본사가 마케팅 비용을 쓰고, 점주님이 그 효과를 매장에서 누리는 구조입니다.</p>
+            </div>
+          </div>
+          
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span class="faq-q-text">Q7. 계약 후 지켜야 할 규정과 페널티가 있나요?</span>
+              <div class="faq-toggle">+</div>
+            </div>
+            <div class="faq-a">
+              <p>있습니다. 그리고 강력합니다. 초기 비용 전액 면제의 전제 조건은 <strong>브랜드 품질 유지</strong>입니다. 지정 소스를 사용하지 않거나 임의로 맛을 변경하는 경우, 위생 및 조리 매뉴얼을 위반하는 경우, <strong>투 스트라이크 아웃 제도</strong>가 적용됩니다. 2회 적발 시 계약 즉시 해지, <strong>7일 내 간판 철거</strong>입니다. 이 원칙은 성실하게 운영하시는 점주님들을 보호하기 위한 가장 확실한 안전장치입니다.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="location">
     <div class="loc-inner reveal">
       <div class="loc-info">
@@ -1040,10 +1234,12 @@
       }
     });
 
+    /* FAQ 스크립트 수정: 기존 고객 FAQ와 해동제 FAQ가 서로 독립적으로 열리고 닫히도록 조정 */
     function toggleFaq(btn) {
       const item = btn.parentElement;
+      const container = item.parentElement; // 현재 클릭된 FAQ가 속한 그룹 컨테이너
       const open = item.classList.contains('open');
-      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      container.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
       if (!open) item.classList.add('open');
     }
 
@@ -1059,7 +1255,7 @@
         --dur:${Math.random()*5+4}s;
         --delay:${Math.random()*8}s;
       `;
-      pWrap.appendChild(p);
+      if(pWrap) pWrap.appendChild(p);
     }
 
     const obs = new IntersectionObserver(entries => {
