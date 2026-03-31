@@ -467,24 +467,20 @@
     /* 모든 카드 정사각형 이미지 영역 */
     .m-img {
       width: 100%; aspect-ratio: 1 / 1;
-      display: flex; align-items: center; justify-content: center;
       position: relative;
       background-size: cover; background-position: center; background-repeat: no-repeat;
+      background-color: var(--navy);
       overflow: hidden;
     }
-    .m-img::after {
+
+    /* 이미지가 있을 때만 하단 그라데이션 */
+    .m-img.has-image::after {
       content: '';
       position: absolute; inset: 0;
-      background: linear-gradient(180deg, transparent 50%, rgba(3, 26, 16, 0.7) 100%);
+      background: linear-gradient(180deg, transparent 55%, rgba(3, 26, 16, 0.65) 100%);
+      pointer-events: none;
     }
 
-    /* 이미지 없을 때 대체 비주얼 */
-    .m-img-placeholder {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    .m-img-bg { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(3, 26, 16, 0.2), transparent); z-index: 1; }
     .m-tag {
       position: absolute; top: 14px; left: 14px; z-index: 3;
       font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
@@ -1209,9 +1205,7 @@
 
         <!-- 피처드 카드 (2칸) -->
         <div class="m-card featured reveal">
-          <div class="m-img" style="background-image: url('menu1.jpg'); background-color: #082D1B;">
-            <div class="m-img-bg"></div>
-            <div class="m-img-placeholder" id="ph1"></div>
+          <div class="m-img has-image" style="background-image: url('menu1.jpg'); background-color: #082D1B;">
             <span class="m-tag new">신메뉴</span>
           </div>
           <div class="m-info">
@@ -1227,8 +1221,7 @@
 
         <!-- 정사각형 카드들 -->
         <div class="m-card reveal d1">
-          <div class="m-img" style="background-image: url('menu2.jpg'); background-color: #021018;">
-            <div class="m-img-placeholder" id="ph2"></div>
+          <div class="m-img has-image" style="background-image: url('menu2.jpg'); background-color: #021018;">
             <span class="m-tag best">베스트</span>
           </div>
           <div class="m-info">
@@ -1243,8 +1236,7 @@
         </div>
 
         <div class="m-card reveal d2">
-          <div class="m-img" style="background-image: url('menu3.jpg'); background-color: #103F29;">
-            <div class="m-img-placeholder" id="ph3"></div>
+          <div class="m-img has-image" style="background-image: url('menu3.jpg'); background-color: #103F29;">
             <span class="m-tag recommend">추천</span>
           </div>
           <div class="m-info">
@@ -1259,8 +1251,7 @@
         </div>
 
         <div class="m-card reveal">
-          <div class="m-img" style="background-image: url('menu4.jpg'); background-color: #031A10;">
-            <div class="m-img-placeholder" id="ph4"></div>
+          <div class="m-img has-image" style="background-image: url('menu4.jpg'); background-color: #031A10;">
             <span class="m-tag best">시그니처</span>
           </div>
           <div class="m-info">
@@ -1275,8 +1266,7 @@
         </div>
 
         <div class="m-card reveal d1">
-          <div class="m-img" style="background-image: url('menu5.jpg'); background-color: #082D1B;">
-            <div class="m-img-placeholder" id="ph5"></div>
+          <div class="m-img has-image" style="background-image: url('menu5.jpg'); background-color: #082D1B;">
             <span class="m-tag new">신메뉴</span>
           </div>
           <div class="m-info">
@@ -1291,8 +1281,7 @@
         </div>
 
         <div class="m-card reveal d2">
-          <div class="m-img" style="background-image: url('menu6.jpg'); background-color: #103F29;">
-            <div class="m-img-placeholder" id="ph6"></div>
+          <div class="m-img has-image" style="background-image: url('menu6.jpg'); background-color: #103F29;">
             <span class="m-tag recommend">추천</span>
           </div>
           <div class="m-info">
@@ -1307,8 +1296,7 @@
         </div>
 
         <div class="m-card reveal d3">
-          <div class="m-img" style="background-image: url('menu7.jpg'); background-color: #082D1B;">
-            <div class="m-img-placeholder" id="ph7"></div>
+          <div class="m-img has-image" style="background-image: url('menu7.jpg'); background-color: #082D1B;">
             <span class="m-tag recommend">추천</span>
           </div>
           <div class="m-info">
@@ -1323,8 +1311,7 @@
         </div>
 
         <div class="m-card reveal">
-          <div class="m-img" style="background-image: url('menu8.jpg'); background-color: #021018;">
-            <div class="m-img-placeholder" id="ph8"></div>
+          <div class="m-img has-image" style="background-image: url('menu8.jpg'); background-color: #021018;">
             <span class="m-tag recommend">추천</span>
           </div>
           <div class="m-info">
@@ -1339,8 +1326,7 @@
         </div>
 
         <div class="m-card reveal d1">
-          <div class="m-img" style="background-image: url('menu9.jpg'); background-color: #155239;">
-            <div class="m-img-placeholder" id="ph9"></div>
+          <div class="m-img has-image" style="background-image: url('menu9.jpg'); background-color: #155239;">
             <span class="m-tag new">별미</span>
           </div>
           <div class="m-info">
@@ -1355,8 +1341,9 @@
         </div>
 
         <div class="m-card reveal d2">
-          <div class="m-img" style="background-image: url('menu10.jpg'); background-color: #0F7EA6;">
-            <div class="m-img-placeholder" id="ph10"></div>
+          <div class="m-img has-image" style="background-image: url('menu10.jpg'); background-color: #0F7EA6;">
+            <span class="m-tag recommend">추천</span>
+          </div>
             <span class="m-tag recommend">추천</span>
           </div>
           <div class="m-info">
@@ -1981,35 +1968,6 @@
       `;
       if(bWrap) bWrap.appendChild(b);
     }
-
-    /* ── 메뉴 카드 이미지 없을 때 대체 SVG ── */
-    const placeholders = [
-      { id: 'ph1', color: '#082D1B', label: '황태미역국' },
-      { id: 'ph2', color: '#021018', label: '전복미역국' },
-      { id: 'ph3', color: '#103F29', label: '도가니미역국' },
-      { id: 'ph4', color: '#031A10', label: '전복버터구이' },
-      { id: 'ph5', color: '#082D1B', label: '볼락소금구이' },
-      { id: 'ph6', color: '#103F29', label: '수제떡갈비' },
-      { id: 'ph7', color: '#082D1B', label: '조개굴미역국' },
-      { id: 'ph8', color: '#021018', label: '가자미미역국' },
-      { id: 'ph9', color: '#155239', label: '골뱅이명태초무침' },
-      { id: 'ph10', color: '#0F4060', label: '어묵미역국' },
-    ];
-    placeholders.forEach(({ id, color, label }) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.innerHTML = `
-        <svg width="100%" height="100%" viewBox="0 0 260 260" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;">
-          <rect width="260" height="260" fill="${color}"/>
-          <circle cx="130" cy="115" r="55" fill="rgba(93,146,107,0.12)" stroke="rgba(180,157,106,0.15)" stroke-width="1"/>
-          <circle cx="130" cy="115" r="40" fill="rgba(16,63,41,0.6)"/>
-          <path d="M108 115 Q118 108, 130 115 Q142 122, 152 115" stroke="rgba(93,146,107,0.6)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-          <path d="M112 121 Q122 128, 130 121 Q138 114, 148 121" stroke="rgba(93,146,107,0.4)" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <ellipse cx="130" cy="125" rx="32" ry="6" fill="rgba(180,157,106,0.12)"/>
-          <text x="130" y="175" text-anchor="middle" font-size="11" fill="rgba(180,157,106,0.45)" font-family="Noto Serif KR, serif" font-weight="600">${label}</text>
-        </svg>
-      `;
-    });
 
     /* ── 스크롤 리빌 ── */
     const obs = new IntersectionObserver(entries => {
