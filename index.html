@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- #86 폰트 최소화: display=swap + 필요한 웨이트만 -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,300;1,600;1,700&display=swap" rel="stylesheet" />
   <style>
     :root {
       --deep:    #031A10;
@@ -305,15 +305,17 @@
     .hero-title {
       font-family: 'Noto Serif KR', serif;
       font-size: clamp(36px, 5.5vw, 96px);
-      font-weight: 700; line-height: 1.1; letter-spacing: -2px;
+      font-weight: 900; line-height: 1.1; letter-spacing: -2px;
       color: var(--pearl); margin-bottom: 32px; word-break: keep-all;
     }
     .hero-title em {
       font-style: italic; color: transparent;
-      font-family: 'Cormorant Garamond', serif; font-weight: 300;
+      font-family: 'Cormorant Garamond', serif; font-weight: 600;
       background: linear-gradient(135deg, var(--seafoam), var(--aqua));
       -webkit-background-clip: text; background-clip: text;
       letter-spacing: -1px;
+      font-size: 1.08em;
+      text-shadow: none;
     }
 
     .hero-desc {
@@ -595,33 +597,88 @@
     }
     .pill:hover { border-color: rgba(180, 157, 106, 0.35); }
 
-    .story-visual { position: relative; width: 100%; }
+    .story-visual { position: relative; width: 100%; display: flex; justify-content: center; }
 
-    .story-main-card {
-      background: var(--ocean); border: 1px solid rgba(180, 157, 106, 0.15);
-      border-radius: 24px; overflow: hidden;
-      /* #31 aspect-ratio 조정 — 모바일에서 덜 길게 */
-      aspect-ratio: 3/4;
-      display: flex; align-items: center; justify-content: center;
-      position: relative; width: 100%;
+    /* ── 9:16 비디오 래퍼 ── */
+    .story-video-wrap {
+      position: relative;
+      /* 9:16 비율 — 세로형 */
+      width: min(340px, 100%);
+      aspect-ratio: 9 / 16;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(180, 157, 106, 0.25);
+      box-shadow:
+        0 32px 80px rgba(2, 14, 9, 0.7),
+        0 0 0 1px rgba(180, 157, 106, 0.08),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      background: var(--navy);
+      /* 부드러운 hover 효과 */
+      transition: transform 0.4s cubic-bezier(0.25,0.8,0.25,1), box-shadow 0.4s;
+    }
+    .story-video-wrap:hover {
+      transform: translateY(-6px) scale(1.01);
+      box-shadow:
+        0 48px 100px rgba(2, 14, 9, 0.8),
+        0 0 0 1px rgba(180, 157, 106, 0.2),
+        inset 0 1px 0 rgba(255,255,255,0.07);
     }
 
-    .story-card-art {
+    .story-video {
       position: absolute; inset: 0;
-      background: radial-gradient(ellipse 70% 50% at 50% 30%, rgba(93, 146, 107, 0.25) 0%, transparent 60%),
-                  radial-gradient(circle at 80% 80%, rgba(180, 157, 106, 0.15) 0%, transparent 40%);
+      width: 100%; height: 100%;
+      object-fit: cover;
+      /* .mov 파일은 일부 브라우저에서 세로로 재생되므로 cover로 채움 */
     }
-    .story-card-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    /* 하단 그라데이션 — 카드처럼 자연스러운 페이드 */
+    .story-video-grad {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 35%;
+      background: linear-gradient(180deg, transparent 0%, rgba(3, 26, 16, 0.75) 100%);
+      pointer-events: none;
+    }
+
+    /* 하단 배지 */
+    .story-video-badge {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(3, 26, 16, 0.82);
+      backdrop-filter: blur(16px) saturate(1.5);
+      border: 1px solid rgba(180, 157, 106, 0.25);
+      border-radius: 100px;
+      padding: 8px 18px;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      color: rgba(249, 245, 236, 0.8);
+      white-space: nowrap;
+      z-index: 10;
+    }
+    .story-video-badge-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--aqua);
+      animation: emblemPulse 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    /* overlap-card / overlay-card — video wrap 기준으로 위치 */
+    .story-visual .overlap-card {
+      position: absolute; top: 24px; left: 0;
+      z-index: 20;
+    }
+    .story-visual .story-overlay-card {
+      position: absolute; bottom: 24px; right: 0;
+      z-index: 20;
+    }
+
+    /* (구 SVG 카드 스타일 제거됨 — 비디오로 교체) */
 
     .story-overlay-card {
-      position: absolute; bottom: -20px; right: -20px;
       background: rgba(8, 45, 27, 0.9); backdrop-filter: blur(20px);
       border: 1px solid rgba(180, 157, 106, 0.2);
-      border-radius: 18px; padding: 18px 20px; width: 175px;
+      border-radius: 18px; padding: 18px 20px; width: 165px;
       animation: floatCard1 5s ease-in-out infinite; z-index: 5;
     }
     .overlap-card {
-      position: absolute; top: 20px; left: -20px;
       background: linear-gradient(135deg, var(--aqua), #C8A855);
       border-radius: 18px; padding: 16px 20px;
       animation: floatCard2 7s ease-in-out infinite; z-index: 5;
@@ -1014,6 +1071,8 @@
       .story-body { text-align: left; }
       .feature-pills { justify-content: center; }
       .overlap-card, .story-overlay-card { display: none; }
+      /* 1col 시 비디오 최대 너비 제한 — 너무 크지 않게 */
+      .story-video-wrap { width: min(320px, 70vw); }
       /* #14 sticky 해제 */
       .faq-left { position: static; }
       .faq-layout { grid-template-columns: 1fr; gap: 36px; padding: 0 24px; }
@@ -1086,6 +1145,7 @@
       .cta-title { font-size: clamp(26px, 7vw, 40px); }
       /* #16 CTA padding 조정 */
       .cta-section { padding: 72px 24px; }
+      .cta-btns { gap: 12px; }
       .hero-stats { grid-template-columns: repeat(2, 1fr); padding: 0 18px 48px; }
       .hero-stat { padding: 22px 18px; }
       .stat-n { font-size: 30px; }
@@ -1095,7 +1155,8 @@
       .loc-inner { padding: 0 18px; }
       .faq-layout { padding: 0 18px; }
       /* #31 story card 모바일 */
-      .story-main-card { aspect-ratio: 4/5; }
+      /* 모바일 비디오 크기 */
+      .story-video-wrap { width: min(280px, 85vw); }
       /* #18 hero video parallax 비활성 */
       .hero-video { will-change: auto; }
     }
@@ -1105,7 +1166,7 @@
       .hero-inner { gap: 20px; padding: 80px 16px 36px; }
       /* #26 btn-ocean */
       .hero-btns { flex-direction: column; align-items: center; }
-      .btn-ocean { width: 100%; max-width: 280px; justify-content: center; padding: 16px 24px; }
+      .btn-ocean { width: 100%; max-width: 300px; justify-content: center; padding: 16px 24px; }
       .btn-text { justify-content: center; }
       .menu-grid { grid-template-columns: 1fr 1fr; }
       .m-card.featured { grid-column: span 2; }
@@ -1114,11 +1175,14 @@
       /* #38 classic-grid */
       .classic-grid { grid-template-columns: 1fr 1fr; }
       .cat-chip { min-width: 110px; padding: 12px 14px; }
-      .cta-btns { flex-direction: column; align-items: center; }
-      .btn-cta-dark, .btn-cta-outline { width: 100%; max-width: 280px; text-align: center; padding: 16px 20px; }
+      /* CTA 버튼 3개 → 세로 */
+      .cta-btns { flex-direction: column; align-items: center; gap: 12px; }
+      .btn-cta-dark, .btn-cta-outline { width: 100%; max-width: 300px; text-align: center; padding: 15px 20px; }
       .hd-inner { padding: 0 16px; }
       section.section-wrap { padding: 56px 16px; }
       .story-inner { padding: 56px 16px; }
+      /* 히어로 타이틀 모바일 최소 크기 확보 */
+      .hero-title { font-size: clamp(28px, 9vw, 44px); }
     }
   </style>
 </head>
@@ -1198,7 +1262,7 @@
 
     <!-- #53 video fallback -->
     <video id="heroVideo" autoplay muted loop playsinline class="hero-video">
-      <source src="lv_0_20260401162940.mp4" type="video/mp4">
+      <source src="lv_0_20260327220447.mp4" type="video/mp4">
     </video>
     <div class="hero-gradient"></div>
 
@@ -1518,37 +1582,27 @@
         <a href="#menu" class="btn-ocean" style="font-size:13px; padding:15px 36px;">메뉴 전체 보기 →</a>
       </div>
 
+      <!-- 9:16 비디오 컬럼 -->
       <div class="story-visual reveal d2">
-        <div class="story-main-card">
-          <div class="story-card-art"></div>
-          <svg class="story-card-svg" viewBox="0 0 400 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="200" cy="250" r="160" stroke="rgba(93,146,107,0.12)" stroke-width="1"/>
-            <circle cx="200" cy="250" r="120" stroke="rgba(180,157,106,0.1)" stroke-width="1" stroke-dasharray="4 8"/>
-            <circle cx="200" cy="250" r="80" stroke="rgba(93,146,107,0.08)" stroke-width="1"/>
-            <ellipse cx="200" cy="310" rx="130" ry="20" fill="rgba(3,26,16,0.4)"/>
-            <path d="M 80 260 Q 100 320, 200 330 Q 300 320, 320 260 Q 280 240, 200 235 Q 120 240, 80 260Z" fill="rgba(16,63,41,0.7)" stroke="rgba(180,157,106,0.2)" stroke-width="1"/>
-            <ellipse cx="200" cy="258" rx="108" ry="18" fill="rgba(180,157,106,0.15)"/>
-            <ellipse cx="200" cy="258" rx="80" ry="12" fill="rgba(180,157,106,0.1)"/>
-            <path d="M 160 255 Q 180 248, 195 258 Q 210 268, 230 255 Q 245 245, 255 258" stroke="rgba(93,146,107,0.7)" stroke-width="3" stroke-linecap="round" fill="none"/>
-            <path d="M 155 262 Q 175 272, 190 262 Q 205 252, 220 262 Q 235 272, 250 262" stroke="rgba(93,146,107,0.5)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <ellipse cx="188" cy="252" rx="14" ry="9" fill="rgba(180,157,106,0.4)" transform="rotate(-15, 188, 252)"/>
-            <ellipse cx="213" cy="256" rx="12" ry="8" fill="rgba(180,157,106,0.35)" transform="rotate(10, 213, 256)"/>
-            <path d="M 170 248 Q 172 240, 168 235 Q 172 230, 170 224" stroke="rgba(3,26,16,0.6)" stroke-width="5" stroke-linecap="round"/>
-            <path d="M 228 250 Q 230 242, 226 237 Q 230 232, 228 226" stroke="rgba(3,26,16,0.6)" stroke-width="4" stroke-linecap="round"/>
-            <text x="200" y="130" text-anchor="middle" font-size="36" fill="rgba(180,157,106,0.12)" font-family="Noto Serif KR">解</text>
-            <text x="200" y="400" text-anchor="middle" font-size="18" fill="rgba(93,146,107,0.2)" font-family="Apple SD Gothic Neo, sans-serif" letter-spacing="3">HAEDONGJE</text>
-            <circle cx="155" cy="248" r="2.5" fill="rgba(180,157,106,0.6)">
-              <animate attributeName="opacity" values="0.3;1;0.3" dur="2.5s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="245" cy="252" r="2" fill="rgba(180,157,106,0.5)">
-              <animate attributeName="opacity" values="1;0.2;1" dur="3s" repeatCount="indefinite"/>
-            </circle>
-            <circle cx="200" cy="240" r="1.5" fill="rgba(255,255,255,0.4)">
-              <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
-            </circle>
-          </svg>
+        <div class="story-video-wrap">
+          <video
+            class="story-video"
+            autoplay muted loop playsinline
+            aria-label="해동제 브랜드 영상"
+          >
+            <source src="1.mov" type="video/mp4">
+            <source src="1.mov" type="video/quicktime">
+          </video>
+          <!-- 하단 그라데이션 오버레이 -->
+          <div class="story-video-grad"></div>
+          <!-- 플로팅 배지 -->
+          <div class="story-video-badge">
+            <div class="story-video-badge-dot"></div>
+            해동제 브랜드 영상
+          </div>
         </div>
 
+        <!-- 플로팅 카드들 — 1024px 이하에서 숨김 -->
         <div class="overlap-card">
           <div class="overlap-card-num">100%</div>
           <div class="overlap-card-label">완도산 미역 사용</div>
@@ -1756,7 +1810,7 @@
           진심 어린 한 그릇의 힘을 믿으신다면,<br/>오래 버텨 마침내 이기는 자영업을 꿈꾸신다면,<br/><strong>지금 연락 주십시오.</strong>
         </div>
         <!-- #2 전화번호 수정, #57 aria-label -->
-        <a href="tel:01020163967" class="btn-ocean" aria-label="해동제 제휴 문의 전화">📞 제휴 문의 전화하기</a>
+        <a href="tel:01020163967" class="btn-ocean" aria-label="해동제 제휴 문의 전화 010-2016-3967">📞 제휴 문의 전화하기</a>
       </div>
 
       <div class="hd-faq-wrap reveal">
@@ -1864,7 +1918,7 @@
           <!-- #2 전화 추가 -->
           <div class="loc-row">
             <strong>전화</strong>
-            <span><a href="tel:050713867996" style="color: var(--aqua); text-decoration: none;" aria-label="해동제 전화 문의">010-2016-3967</a></span>
+            <span><a href="tel:050713867996" style="color: var(--aqua); text-decoration: none;" aria-label="해동제 전화 문의">0507-1386-7996</a></span>
           </div>
         </div>
         <a href="https://map.naver.com/p/entry/place/1193503509" target="_blank" rel="noopener" class="btn-ocean" style="display:inline-flex;">네이버 지도에서 보기 →</a>
@@ -1994,6 +2048,7 @@
     <p class="cta-sub">생일처럼 기쁘고 든든한 하루가 되시길 바랍니다</p>
     <div class="cta-btns">
       <a href="https://map.naver.com/p/entry/place/1193503509" target="_blank" rel="noopener" class="btn-cta-dark">네이버 지도에서 찾기 →</a>
+      <a href="tel:050713867996" class="btn-cta-outline" aria-label="해동제 전화 문의 0507-1386-7996">📞 전화 문의하기</a>
       <a href="#haedongje" class="btn-cta-outline">🌊 해동제 제휴 문의</a>
     </div>
   </div>
@@ -2031,7 +2086,7 @@
           <!-- #56 이메일 링크 -->
           <li><a href="mailto:haedongje@naver.com">이메일 문의</a></li>
           <!-- #2 전화 링크 -->
-          <li><a href="tel:050713867996" aria-label="해동제 전화">010-2016-3967</a></li>
+          <li><a href="tel:050713867996" aria-label="해동제 전화">0507-1386-7996</a></li>
         </ul>
       </div>
     </div>
