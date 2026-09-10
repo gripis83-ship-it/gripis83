@@ -36,6 +36,10 @@
   .hero.sw{background:linear-gradient(150deg, rgba(111,168,220,.14), rgba(111,168,220,.03));border-color:rgba(111,168,220,.35);}
   .hero .tag{font-family:var(--mono);font-size:11.5px;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
   .hero.gen .tag{color:var(--accent2);} .hero.sw .tag{color:var(--blue);}
+  .hero .backlink{font-family:var(--mono);font-size:11px;color:var(--sub);text-decoration:none;
+    border:1px solid var(--line);border-radius:20px;padding:2px 9px;margin-left:6px;white-space:nowrap;}
+  .hero .backlink:hover{color:var(--text);border-color:var(--accent);}
+  .hero .sitename{font-family:var(--mono);font-size:13px;color:var(--sub);letter-spacing:.02em;margin-bottom:6px;}
   .hero .headline{font-size:24px;font-weight:800;line-height:1.35;margin-bottom:10px;}
   .hero .headline b{color:var(--accent);}
   .hero.gen .headline b{color:var(--accent2);}
@@ -66,6 +70,9 @@
   td.name-cell{font-family:var(--sans);}
   tr:last-child td{border-bottom:none;}
   tr.removed td{opacity:.4;text-decoration:line-through;}
+  tr.dim td{opacity:.55;}
+  a.sitelink{color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(79,179,169,.5);}
+  a.sitelink:hover{color:var(--text);border-bottom-color:var(--text);}
   tr.grouphead td{background:var(--panel2);font-family:var(--sans);font-size:11.5px;color:var(--sub);font-weight:600;letter-spacing:.03em;}
   .subline{font-family:var(--mono);font-size:10.5px;color:var(--sub);margin-top:3px;line-height:1.45;font-weight:400;}
   .lname{font-weight:600;font-size:13px;}
@@ -94,6 +101,11 @@
     width:100%;padding:12px 12px;border-radius:7px;border:1px solid var(--line);
     background:var(--bg);color:var(--text);font-size:15px;font-family:var(--sans);
   }
+  select{width:100%;padding:12px 10px;border-radius:7px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-size:14px;font-family:var(--sans);appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;}
+  select:focus{outline:none;border-color:var(--accent);}
   input[type=text]:focus, input[type=number]:focus{outline:none;border-color:var(--accent);}
   .suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel2);border:1px solid var(--line);border-radius:8px;max-height:320px;overflow-y:auto;z-index:20;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);}
   .suggest.show{display:block;}
@@ -103,6 +115,8 @@
   .suggest .item .nm{color:var(--text);}
   .suggest .item .meta{color:var(--sub);font-family:var(--mono);font-size:11px;text-align:right;white-space:nowrap;}
   .suggest .empty{padding:12px;color:var(--sub);font-size:13px;text-align:center;}
+  .suggest-head{padding:9px 12px;color:var(--sub);font-size:11.5px;border-bottom:1px solid var(--line);
+    background:var(--panel3);position:sticky;top:0;}
 
   .chiprow{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
   .chip{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);color:var(--sub);padding:5px 10px;border-radius:20px;cursor:pointer;}
@@ -157,7 +171,7 @@
     <h2>설비 검색</h2>
     <div class="h2sub">변전소명 · 발전소명 · 발전기명 · 모선번호 중 아무거나 입력하세요 (예: 인천복합, 금촌, 신안성, 70102)</div>
     <div class="search-row">
-      <input type="text" id="searchInput" placeholder="예: 인천복합 / 금촌 / 신서산 / 40893" autocomplete="off">
+      <input type="text" id="searchInput" placeholder="변전소 · 발전소 · 발전기명 · 모선번호 입력 (클릭하면 전체 목록)" autocomplete="off" spellcheck="false">
       <div class="suggest" id="suggestBox"></div>
     </div>
     <div class="chiprow" id="filterChips"></div>
@@ -165,7 +179,7 @@
   </div>
 
   <div id="resultArea">
-    <div class="panel"><div class="placeholder">설비를 검색하여 선택하면 결과가 표시됩니다.</div></div>
+    <div class="panel"><div class="placeholder">계통 데이터를 불러오는 중입니다…</div></div>
   </div>
 
   <footer id="footStat"></footer>
@@ -187,7 +201,9 @@
   "use strict";
   const SBASE = 100.0;
 
-  /* ============ CSV ============ */
+  /* ==================================================================
+     1. CSV 파싱
+     ================================================================== */
   function parseCSV(text){
     const lines = text.split("\n").filter(l => l.length > 0);
     const headers = lines[0].split(",").map(h => h.trim());
@@ -216,7 +232,9 @@
   const dcRows    = parseCSV(J("dcline-csv")).filter(r=>r.name);
   const vscRows   = parseCSV(J("vsc-csv")).filter(r=>r.name);
 
-  /* ============ complex math ============ */
+  /* ==================================================================
+     2. 복소수 연산
+     ================================================================== */
   const C = {
     add:(a,b)=>({re:a.re+b.re, im:a.im+b.im}),
     sub:(a,b)=>({re:a.re-b.re, im:a.im-b.im}),
@@ -229,21 +247,22 @@
     inv:(a)=>C.div({re:1,im:0}, a)
   };
 
-  /* ============ site key (변전소/발전소 단위로 모선 묶기) ============ */
-  const SUF = /_(T23|D23|SW|G|765|345|154|22\.9|23|18|13\.8|11|22)$/;
+  /* ==================================================================
+     3. 모선 → 사업소(변전소/발전소) 그룹핑
+     모선명 접미어(_154 _345 _765 _SW _G _D23 _T23 …)와 호기번호(#1)를
+     제거해 같은 구내 설비를 하나의 사업소로 묶는다.
+     ================================================================== */
+  const SUF = /_(T23|D23|SW|G|765|345|154|22\.9|23|22|18|13\.8|11)$/;
   const INF = /_(900\d+)(LV)?$/;
   function siteKey(name){
     let n = name, prev = null, guard = 0;
     while (prev !== n && guard++ < 8){
       prev = n;
-      n = n.replace(SUF, "");
-      n = n.replace(INF, "");
-      n = n.replace(/#\d+$/, "");
+      n = n.replace(SUF, "").replace(INF, "").replace(/#\d+$/, "");
     }
-    return n;
+    return n || name;
   }
 
-  /* ============ bus index + sites ============ */
   const busInfo = {}, siteOfBus = {}, sites = {};
   busRows.forEach(b=>{
     const vm = num(b.vm_pu), va = num(b.va_deg)*Math.PI/180;
@@ -251,14 +270,15 @@
       bus:b.bus, name:b.name, kv:num(b.base_kv), voltClass:b.volt_class, type:b.type,
       vm:vm, va_deg:num(b.va_deg), vmax:num(b.vmax_pu), vmin:num(b.vmin_pu),
       inService: b.in_service==="1",
-      region: b.region, areaName: b.area_name, lat:num(b.lat), lon:num(b.lon),
+      region: b.region, areaName: b.area_name, zone:b.zone,
+      lat:num(b.lat), lon:num(b.lon),
       V: {re: vm*Math.cos(va), im: vm*Math.sin(va)}
     };
     const k = siteKey(b.name);
     siteOfBus[b.bus] = k;
     if (!sites[k]){
       sites[k] = { key:k, name:k, buses:[], kvs:new Set(), regions:new Set(), areas:new Set(),
-                   loadBuses:[], genBuses:[], gens:[], loads:[], lat:0, lon:0 };
+                   loadBuses:[], genBuses:[], gens:[], loads:[], lat:0, lon:0, _cap:null, _ln:null };
     }
     const s = sites[k];
     s.buses.push(b.bus);
@@ -267,10 +287,10 @@
     if (b.area_name) s.areas.add(b.area_name);
     if (!s.lat && num(b.lat)) { s.lat = num(b.lat); s.lon = num(b.lon); }
   });
-  function sName(key){ return key; }
-  function busSite(bus){ return siteOfBus[bus] || (busInfo[bus] ? busInfo[bus].name : bus); }
 
-  /* ============ badges / labels ============ */
+  /* ==================================================================
+     4. 표시용 헬퍼
+     ================================================================== */
   function kvBadgeClass(kv){
     if (kv>=765) return "v765";
     if (kv>=345) return "v345";
@@ -284,8 +304,20 @@
     return (Math.round(kv*10)/10) + "kV";
   }
   function kvBadge(kv){ return '<span class="badge '+kvBadgeClass(kv)+'">'+kvLabel(kv)+'</span>'; }
+  function fmt(n, d){ d = (d===undefined)?2:d; return (n||0).toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
+  function pctClass(p){ return p>=100 ? 'bad' : (p>=80 ? 'warn' : 'ok'); }
+  function loadBarHtml(pct){
+    const cls = pctClass(pct);
+    const w = Math.round(Math.min(Math.max(pct,0),100)*10)/10;
+    return '<div class="loadbar-wrap"><div class="loadbar"><div class="fill '+cls+'" style="width:'+w+'%"></div></div>'+
+           '<span class="pct '+cls+'">'+fmt(pct,1)+'%</span></div>';
+  }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function link(key, label){ return '<a href="#" class="sitelink" data-site="'+esc(key)+'">'+esc(label===undefined?key:label)+'</a>'; }
 
-  /* ============ 송전선로명 파싱 ============ */
+  /* ==================================================================
+     5. 송전선로명 파싱
+     ================================================================== */
   const LTYPE = { osm:"가공", cbl:"지중케이블", gap:"연계", corr:"보정", add:"증설",
                   loop:"루프", lead:"인출", "제주":"제주계통" };
   function cleanEnd(x){ return x.replace(SUF,"").replace(INF,"").replace(/_(D23|T23|SW)$/,""); }
@@ -294,51 +326,51 @@
     let s = raw, kvTag = "", type = "", ckt = "";
     const mp = s.match(/^(\d+)?(osm|cbl|gap|corr|add|loop|lead|제주)?_/);
     if (mp && (mp[1] || mp[2])){ kvTag = mp[1] || ""; type = mp[2] || ""; s = s.slice(mp[0].length); }
-    const mc = s.match(/_([1-9])$/);
+    const mc = s.match(/_([1-9])$/);          // 회선번호는 한 자리 (전압 토큰 _154 오인 방지)
     if (mc){ ckt = mc[1]; s = s.slice(0, s.length - mc[0].length); }
     return { group:s, ckt:ckt, kvTag:kvTag, type:type, typeLabel: LTYPE[type] || "간선", raw:raw };
   }
 
-  /* ============ 송전선로 조류 ============ */
+  /* ==================================================================
+     6. 송전선로 조류
+     부호 규약: Pfrom / Pto 모두 "해당 모선에서 선로로 나가는 방향"이 (+)
+     ================================================================== */
   const lineFlows = [];
   lineRows.forEach(r=>{
-    if (r.name.indexOf("HVDC") === 0) return;
+    if (r.name.indexOf("HVDC") === 0) return;          // HVDC는 별도 처리
     const bi = busInfo[r.from_bus], bj = busInfo[r.to_bus];
     if (!bi || !bj) return;
     const inSvc = r.in_service === "1";
     const y = C.inv({re:num(r.r_pu), im:num(r.x_pu)});
     const bTot = num(r.b_pu);
     const bf = num(r.b_from_pu) || bTot/2;
-    const bt = num(r.b_to_pu) || bTot/2;
+    const bt = num(r.b_to_pu)   || bTot/2;
     const gf = num(r.g_from_pu), gt = num(r.g_to_pu);
     let Sfrom = {re:0,im:0}, Sto = {re:0,im:0};
     if (inSvc){
-      const Iif = C.add(C.mul(y, C.sub(bi.V,bj.V)), C.mul({re:gf,im:bf}, bi.V));
-      Sfrom = C.mul(bi.V, C.conj(Iif));
-      const Ijt = C.add(C.mul(y, C.sub(bj.V,bi.V)), C.mul({re:gt,im:bt}, bj.V));
-      Sto = C.mul(bj.V, C.conj(Ijt));
+      Sfrom = C.mul(bi.V, C.conj(C.add(C.mul(y, C.sub(bi.V,bj.V)), C.mul({re:gf,im:bf}, bi.V))));
+      Sto   = C.mul(bj.V, C.conj(C.add(C.mul(y, C.sub(bj.V,bi.V)), C.mul({re:gt,im:bt}, bj.V))));
     }
     const rateA = num(r.rate_a_mva);
     const Sf = C.abs(Sfrom)*SBASE, St = C.abs(Sto)*SBASE;
-    const Smax = Math.max(Sf,St);
-    const pn = parseLineName(r.name);
     const xpu = Math.abs(num(r.x_pu));
     lineFlows.push({
-      kind:"line", raw:r.name, pn:pn, id:r.id, inSvc:inSvc,
-      from:r.from_bus, to:r.to_bus,
-      fromName: bi.name, toName: bj.name,
-      fromSite: siteOfBus[r.from_bus], toSite: siteOfBus[r.to_bus],
+      kind:"line", raw:r.name, pn:parseLineName(r.name), id:r.id, inSvc:inSvc,
+      from:r.from_bus, to:r.to_bus, fromName:bi.name, toName:bj.name,
+      fromSite:siteOfBus[r.from_bus], toSite:siteOfBus[r.to_bus],
       kv: Math.max(bi.kv, bj.kv),
       Pfrom:Sfrom.re*SBASE, Qfrom:Sfrom.im*SBASE, Sfrom:Sf,
       Pto:Sto.re*SBASE,     Qto:Sto.im*SBASE,     Sto:St,
       rateA:rateA, rateB:num(r.rate_b_mva), rateC:num(r.rate_c_mva),
-      Smax:Smax, loadPct: rateA>0 ? Smax/rateA*100 : 0,
-      lengthKm: num(r.length_km), cableKm: num(r.cable_km),
-      xpu: xpu, lowZ: xpu > 0 && xpu < 1.5e-4
+      Smax:Math.max(Sf,St), loadPct: rateA>0 ? Math.max(Sf,St)/rateA*100 : 0,
+      lengthKm:num(r.length_km), cableKm:num(r.cable_km),
+      xpu:xpu, lowZ: xpu > 0 && xpu < 1.5e-4
     });
   });
 
-  /* ============ 2권선 변압기 ============ */
+  /* ==================================================================
+     7. 2권선 변압기
+     ================================================================== */
   const t2Flows = [];
   t2Rows.forEach(r=>{
     const bh = busInfo[r.hv_bus], bl = busInfo[r.lv_bus];
@@ -347,15 +379,13 @@
     const y = C.inv({re:num(r.r_pu), im:num(r.x_pu)});
     const ratio = num(r.ratio) || 1;
     const T = C.fromPolar(ratio, num(r.shift_deg)*Math.PI/180);
-    const Tmag2 = ratio*ratio;
-    const Yff = C.scale(y, 1/Tmag2);
+    const Yff = C.scale(y, 1/(ratio*ratio));
     const Yft = C.scale(C.div(y, C.conj(T)), -1);
     const Ytf = C.scale(C.div(y, T), -1);
-    const Ytt = y;
     let Sfrom = {re:0,im:0}, Sto = {re:0,im:0};
     if (inSvc){
       Sfrom = C.mul(bh.V, C.conj(C.add(C.mul(Yff,bh.V), C.mul(Yft,bl.V))));
-      Sto   = C.mul(bl.V, C.conj(C.add(C.mul(Ytf,bh.V), C.mul(Ytt,bl.V))));
+      Sto   = C.mul(bl.V, C.conj(C.add(C.mul(Ytf,bh.V), C.mul(y,bl.V))));
     }
     const rateA = num(r.rate_a_mva) || num(r.sn_mva);
     const Sf = C.abs(Sfrom)*SBASE, St = C.abs(Sto)*SBASE;
@@ -363,16 +393,18 @@
     t2Flows.push({
       kind:"t2", subtype: isGSU ? "GSU" : "MTr", name:r.name, id:r.id, inSvc:inSvc,
       hv:r.hv_bus, lv:r.lv_bus, hvName:bh.name, lvName:bl.name,
-      hvSite: siteOfBus[r.hv_bus], lvSite: siteOfBus[r.lv_bus],
+      hvSite:siteOfBus[r.hv_bus], lvSite:siteOfBus[r.lv_bus],
       vnHv:num(r.vn_hv_kv), vnLv:num(r.vn_lv_kv),
-      Phv:Sfrom.re*SBASE, Qhv:Sfrom.im*SBASE, Shv:Sf,
-      Plv:-Sto.re*SBASE, Qlv:-Sto.im*SBASE, Slv:St,
-      sn: num(r.sn_mva), rateA:rateA, rateB:num(r.rate_b_mva), rateC:num(r.rate_c_mva),
+      Phv:Sfrom.re*SBASE, Qhv:Sfrom.im*SBASE, Shv:Sf,   // HV모선 → 변압기 (+)
+      Plv:-Sto.re*SBASE,  Qlv:-Sto.im*SBASE,  Slv:St,   // 변압기 → LV모선 (+)
+      sn:num(r.sn_mva), rateA:rateA, rateB:num(r.rate_b_mva), rateC:num(r.rate_c_mva),
       Smax: Math.max(Sf,St), loadPct: rateA>0 ? Math.max(Sf,St)/rateA*100 : 0
     });
   });
 
-  /* ============ 3권선 변압기 ============ */
+  /* ==================================================================
+     8. 3권선 변압기 (Y 등가)
+     ================================================================== */
   const t3Flows = [];
   t3Rows.forEach(r=>{
     const bh = busInfo[r.hv_bus], bm = busInfo[r.mv_bus], bl = busInfo[r.lv_bus];
@@ -381,19 +413,17 @@
     const zHM = {re:num(r.r_hv_mv_pu), im:num(r.x_hv_mv_pu)};
     const zML = {re:num(r.r_mv_lv_pu), im:num(r.x_mv_lv_pu)};
     const zLH = {re:num(r.r_lv_hv_pu), im:num(r.x_lv_hv_pu)};
-    const zH = C.scale(C.sub(C.add(zHM,zLH), zML), 0.5);
-    const zM = C.scale(C.sub(C.add(zHM,zML), zLH), 0.5);
-    const zL = C.scale(C.sub(C.add(zML,zLH), zHM), 0.5);
-    const yH = C.inv(zH), yM = C.inv(zM), yL = C.inv(zL);
+    const yH = C.inv(C.scale(C.sub(C.add(zHM,zLH), zML), 0.5));
+    const yM = C.inv(C.scale(C.sub(C.add(zHM,zML), zLH), 0.5));
+    const yL = C.inv(C.scale(C.sub(C.add(zML,zLH), zHM), 0.5));
     const tH = C.fromPolar(num(r.ratio_hv)||1, 0);
     const tM = C.fromPolar(num(r.ratio_mv)||1, num(r.shift_mv_deg)*Math.PI/180);
     const tL = C.fromPolar(num(r.ratio_lv)||1, num(r.shift_lv_deg)*Math.PI/180);
-    const numer = C.add(C.add(C.mul(C.div(yH,tH),bh.V), C.mul(C.div(yM,tM),bm.V)), C.mul(C.div(yL,tL),bl.V));
-    const denom = C.add(C.add(yH,yM),yL);
-    const Vs = C.div(numer, denom);
+    const Vs = C.div(
+      C.add(C.add(C.mul(C.div(yH,tH),bh.V), C.mul(C.div(yM,tM),bm.V)), C.mul(C.div(yL,tL),bl.V)),
+      C.add(C.add(yH,yM),yL));
     function legFlow(Vk, tk, yk){
-      const Tmag2 = (tk.re*tk.re+tk.im*tk.im);
-      const Ykk = C.scale(yk, 1/Tmag2);
+      const Ykk = C.scale(yk, 1/(tk.re*tk.re+tk.im*tk.im));
       const Yks = C.scale(C.div(yk, C.conj(tk)), -1);
       return C.mul(Vk, C.conj(C.add(C.mul(Ykk,Vk), C.mul(Yks,Vs))));
     }
@@ -401,193 +431,815 @@
     const Sm = inSvc ? legFlow(bm.V, tM, yM) : {re:0,im:0};
     const Sl = inSvc ? legFlow(bl.V, tL, yL) : {re:0,im:0};
     const rH = num(r.rate_hv_mva), rM = num(r.rate_mv_mva), rL = num(r.rate_lv_mva);
-    const entry = {
+    const e = {
       kind:"t3", name:r.name, id:r.id, inSvc:inSvc,
       hv:r.hv_bus, mv:r.mv_bus, lv:r.lv_bus,
       hvName:bh.name, mvName:bm.name, lvName:bl.name,
+      hvSite:siteOfBus[r.hv_bus], mvSite:siteOfBus[r.mv_bus], lvSite:siteOfBus[r.lv_bus],
       vnHv:num(r.vn_hv_kv), vnMv:num(r.vn_mv_kv), vnLv:num(r.vn_lv_kv),
-      legs: {
+      legs:{
         hv:{bus:r.hv_bus, P:Sh.re*SBASE, Q:Sh.im*SBASE, S:C.abs(Sh)*SBASE, rate:rH, loadPct: rH>0?C.abs(Sh)*SBASE/rH*100:0},
         mv:{bus:r.mv_bus, P:Sm.re*SBASE, Q:Sm.im*SBASE, S:C.abs(Sm)*SBASE, rate:rM, loadPct: rM>0?C.abs(Sm)*SBASE/rM*100:0},
         lv:{bus:r.lv_bus, P:Sl.re*SBASE, Q:Sl.im*SBASE, S:C.abs(Sl)*SBASE, rate:rL, loadPct: rL>0?C.abs(Sl)*SBASE/rL*100:0}
       }
     };
-    entry.maxLoadPct = Math.max(entry.legs.hv.loadPct, entry.legs.mv.loadPct, entry.legs.lv.loadPct);
-    t3Flows.push(entry);
+    e.maxLoadPct = Math.max(e.legs.hv.loadPct, e.legs.mv.loadPct, e.legs.lv.loadPct);
+    t3Flows.push(e);
   });
 
-  /* ============ 부하 / 발전 / 보상설비 인덱스 ============ */
+  /* ==================================================================
+     9. 부하 / 발전 / 보상설비 / HVDC 인덱스
+     ================================================================== */
   const loadByBus = {};
   loadRows.forEach(r=>{
     if (r.in_service !== "1") return;
-    loadByBus[r.bus] = { bus:r.bus, name:r.name, p:num(r.p_mw), q:num(r.q_mvar) };
-    const k = siteOfBus[r.bus];
-    if (k && sites[k]){ sites[k].loadBuses.push(r.bus); sites[k].loads.push(loadByBus[r.bus]); }
+    const l = { bus:r.bus, name:r.name, p:num(r.p_mw), q:num(r.q_mvar) };
+    loadByBus[r.bus] = l;
+    const s = sites[siteOfBus[r.bus]];
+    if (s){ s.loadBuses.push(r.bus); s.loads.push(l); }
   });
+
   const genByBus = {};
   genRows.forEach(r=>{
     const g = { bus:r.bus, id:r.id, name:r.name, p:num(r.p_mw), q:num(r.q_mvar),
                 pmax:num(r.p_max_mw), pmin:num(r.p_min_mw), mbase:num(r.mbase_mva),
                 qmax:num(r.q_max_mvar), qmin:num(r.q_min_mvar),
                 inSvc: r.in_service === "1", vset:num(r.vset_pu) };
-    if (!genByBus[r.bus]) genByBus[r.bus] = [];
-    genByBus[r.bus].push(g);
-    const k = siteOfBus[r.bus];
-    if (k && sites[k]){ sites[k].gens.push(g); if (sites[k].genBuses.indexOf(r.bus)<0) sites[k].genBuses.push(r.bus); }
-  });
-  const shuntByBus = {};
-  shuntRows.forEach(r=>{
-    if (r.in_service !== "1") return;
-    if (!shuntByBus[r.bus]) shuntByBus[r.bus] = [];
-    shuntByBus[r.bus].push({bus:r.bus, name:r.name, kind:r.kind, p:num(r.p_mw), q:num(r.q_mvar)});
-  });
-  const factsByBus = {};
-  factsRows.forEach(r=>{
-    if (!factsByBus[r.bus]) factsByBus[r.bus] = [];
-    factsByBus[r.bus].push({bus:r.bus, name:r.name, shmax:num(r.shmax_mvar), vset:num(r.vset_pu)});
+    (genByBus[r.bus] = genByBus[r.bus] || []).push(g);
+    const s = sites[siteOfBus[r.bus]];
+    if (s){ s.gens.push(g); if (s.genBuses.indexOf(r.bus)<0) s.genBuses.push(r.bus); }
   });
 
-  /* ============ HVDC ============ */
-  const hvdcBySite = {};
-  function addHvdc(entry, buses){
-    buses.forEach(b=>{
-      const k = siteOfBus[b];
+  // 개방(휴지) 뱅크도 "예비"로 표시 — 즉시 투입 가능한 무효전력 여유이므로 버리지 않는다
+  const shuntByBus = {};
+  shuntRows.forEach(r=>{
+    const x = { bus:r.bus, name:r.name, kind:r.kind, p:num(r.p_mw), q:num(r.q_mvar),
+                inSvc: r.in_service === "1" };
+    (shuntByBus[r.bus] = shuntByBus[r.bus] || []).push(x);
+  });
+
+  const factsByBus = {};
+  factsRows.forEach(r=>{
+    (factsByBus[r.bus] = factsByBus[r.bus] || []).push(
+      {bus:r.bus, name:r.name, shmax:num(r.shmax_mvar), vset:num(r.vset_pu)});
+  });
+
+  const hvdcBySite = {}, hvdcAll = [];
+  function addHvdc(e){
+    hvdcAll.push(e);
+    [...new Set([siteOfBus[e.a], siteOfBus[e.b]])].forEach(k=>{
       if (!k) return;
-      if (!hvdcBySite[k]) hvdcBySite[k] = [];
-      if (!hvdcBySite[k].find(x=>x.name===entry.name)) hvdcBySite[k].push(entry);
+      (hvdcBySite[k] = hvdcBySite[k] || []).push(e);
     });
   }
   const dcSeen = {};
   dcRows.forEach(r=>{
     if (dcSeen[r.name]) return; dcSeen[r.name] = true;
     addHvdc({name:r.name, kind:"LCC-HVDC", mw:Math.abs(num(r.setvl)), kv:num(r.vschd_kv),
-             a:r.ac_from_bus, b:r.ac_to_bus, lengthKm:num(r.length_km)}, [r.ac_from_bus, r.ac_to_bus]);
+             a:r.ac_from_bus, b:r.ac_to_bus, lengthKm:num(r.length_km)});
   });
   vscRows.forEach(r=>{
     addHvdc({name:r.name, kind:"VSC-HVDC", mw:num(r.c1_smax_mva), kv:num(r.c1_dcset),
-             a:r.ac_from_bus, b:r.ac_to_bus, lengthKm:num(r.length_km)}, [r.ac_from_bus, r.ac_to_bus]);
+             a:r.ac_from_bus, b:r.ac_to_bus, lengthKm:num(r.length_km)});
   });
 
-  /* ============ 사이트별 설비 매핑 ============ */
+  /* ==================================================================
+     10. 사업소별 설비 매핑
+     ================================================================== */
   const linesBySite = {}, t2BySite = {}, t3BySite = {};
-  function push(map, k, v){ if(!k) return; if(!map[k]) map[k]=[]; map[k].push(v); }
+  function push(map,k,v){ if(!k) return; (map[k] = map[k] || []).push(v); }
 
   lineFlows.forEach(f=>{
-    if (f.fromSite === f.toSite){
-      push(linesBySite, f.fromSite, {f:f, nearBus:f.from, farBus:f.to, farSite:f.toSite,
-        P:f.Pfrom, Q:f.Qfrom, S:f.Sfrom, internal:true});
-      return;
-    }
     push(linesBySite, f.fromSite, {f:f, nearBus:f.from, farBus:f.to, farSite:f.toSite,
-      P:f.Pfrom, Q:f.Qfrom, S:f.Sfrom, internal:false});
-    push(linesBySite, f.toSite, {f:f, nearBus:f.to, farBus:f.from, farSite:f.fromSite,
-      P:f.Pto, Q:f.Qto, S:f.Sto, internal:false});
+      P:f.Pfrom, Q:f.Qfrom, S:f.Sfrom, internal:f.fromSite===f.toSite});
+    if (f.fromSite !== f.toSite)
+      push(linesBySite, f.toSite, {f:f, nearBus:f.to, farBus:f.from, farSite:f.fromSite,
+        P:f.Pto, Q:f.Qto, S:f.Sto, internal:false});
   });
   t2Flows.forEach(f=>{
     push(t2BySite, f.hvSite, f);
     if (f.lvSite !== f.hvSite) push(t2BySite, f.lvSite, f);
   });
   t3Flows.forEach(f=>{
-    const ks = [...new Set([siteOfBus[f.hv], siteOfBus[f.mv], siteOfBus[f.lv]])];
-    ks.forEach(k=>push(t3BySite, k, f));
+    [...new Set([f.hvSite, f.mvSite, f.lvSite])].forEach(k=>push(t3BySite,k,f));
   });
 
-  /* ============ 설비 유형 판정 ============ */
-  Object.values(sites).forEach(s=>{
-    s.kvList = [...s.kvs].sort((a,b)=>b-a);
-    s.maxKv = s.kvList.length ? s.kvList[0] : 0;
-    s.region = [...s.regions][0] || "";
-    s.area = [...s.areas][0] || "";
-    s.genPmax = s.gens.reduce((a,g)=>a+g.pmax, 0);
-    s.genP = s.gens.reduce((a,g)=>a+(g.inSvc?g.p:0), 0);
-    s.loadP = s.loads.reduce((a,l)=>a+l.p, 0);
-    s.nLines = (linesBySite[s.key]||[]).length;
-    s.hasGen = s.gens.length > 0;
-    s.hasMTr = (t3BySite[s.key] || []).length > 0 ||
-               (t2BySite[s.key] || []).some(f => f.subtype === "MTr");
-    if (s.key.indexOf("변환소") >= 0) s.type = "변환소";
-    else if (s.hasGen && (s.loads.length === 0 || s.genPmax > s.loadP)) s.type = "발전소";
-    else if (s.loads.length > 0 || s.hasMTr) s.type = "변전소";
-    else if (s.hasGen) s.type = "발전소";
-    else s.type = "개폐/연계";
-    s.searchText = (s.key + " " + s.buses.join(" ") + " " +
-      s.buses.map(b=>busInfo[b].name).join(" ") + " " +
-      s.gens.map(g=>g.name).join(" ")).toLowerCase();
+  /* 수전 변압기(모선별) 인덱스 — 조회할 때마다 전수 스캔하지 않도록 1회 구축 */
+  const unitsByBus = {};
+  function addUnit(bus,u){ (unitsByBus[bus] = unitsByBus[bus] || []).push(u); }
+  t2Flows.forEach(f=>{
+    if (!f.inSvc) return;
+    addUnit(f.lv, {name:f.name, type:"2권선", side:"LV측 수전", otherBus:f.hv, thisBus:f.lv,
+      base:f.rateA, emerS:f.rateB||f.rateA, emerL:f.rateC||f.rateB||f.rateA,
+      flowP:f.Plv, flowQ:f.Qlv, flowS:f.Slv, loadPct:f.loadPct, subtype:f.subtype});
+    addUnit(f.hv, {name:f.name, type:"2권선", side:"HV측 수전(역방향)", otherBus:f.lv, thisBus:f.hv,
+      base:f.rateA, emerS:f.rateB||f.rateA, emerL:f.rateC||f.rateB||f.rateA,
+      flowP:f.Phv, flowQ:f.Qhv, flowS:f.Shv, loadPct:f.loadPct, subtype:f.subtype});
   });
-  const siteList = Object.values(sites).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
-
-  /* ============ 수전 변압기 (부하 모선을 먹이는 변압기) ============ */
-  function unitsForBus(bus){
-    const units = [];
-    t2Flows.forEach(f=>{
-      if (!f.inSvc) return;
-      if (f.lv === bus){
-        units.push({name:f.name, type:"2권선", side:"LV측 수전", otherBus:f.hv, thisBus:bus,
-          base:f.rateA, emerS:f.rateB||f.rateA, emerL:f.rateC||f.rateB||f.rateA,
-          flowP:f.Plv, flowQ:f.Qlv, flowS:f.Slv, loadPct:f.loadPct, subtype:f.subtype});
-      } else if (f.hv === bus){
-        units.push({name:f.name, type:"2권선", side:"HV측 수전(역방향)", otherBus:f.lv, thisBus:bus,
-          base:f.rateA, emerS:f.rateB||f.rateA, emerL:f.rateC||f.rateB||f.rateA,
-          flowP:f.Phv, flowQ:f.Qhv, flowS:f.Shv, loadPct:f.loadPct, subtype:f.subtype});
-      }
-    });
-    t3Flows.forEach(f=>{
-      if (!f.inSvc) return;
-      if (f.lv === bus){
-        const L=f.legs.lv;
-        units.push({name:f.name, type:"3권선", side:"LV측 수전", otherBus:f.hv, thisBus:bus,
-          base:L.rate, emerS:L.rate, emerL:L.rate, flowP:L.P, flowQ:L.Q, flowS:L.S, loadPct:L.loadPct, subtype:"MTr"});
-      } else if (f.mv === bus){
-        const L=f.legs.mv;
-        units.push({name:f.name, type:"3권선", side:"MV측 수전", otherBus:f.hv, thisBus:bus,
-          base:L.rate, emerS:L.rate, emerL:L.rate, flowP:L.P, flowQ:L.Q, flowS:L.S, loadPct:L.loadPct, subtype:"MTr"});
-      } else if (f.hv === bus){
-        const L=f.legs.hv;
-        units.push({name:f.name, type:"3권선", side:"HV측 수전(역방향)", otherBus:f.mv, thisBus:bus,
-          base:L.rate, emerS:L.rate, emerL:L.rate, flowP:L.P, flowQ:L.Q, flowS:L.S, loadPct:L.loadPct, subtype:"MTr"});
-      }
-    });
-    return units;
-  }
+  t3Flows.forEach(f=>{
+    if (!f.inSvc) return;
+    const mk = (leg, side, other) => ({
+      name:f.name, type:"3권선", side:side, otherBus:other, thisBus:leg.bus,
+      base:leg.rate, emerS:leg.rate, emerL:leg.rate,
+      flowP:-leg.P, flowQ:-leg.Q, flowS:leg.S, loadPct:leg.loadPct, subtype:"MTr"});
+    addUnit(f.lv, mk(f.legs.lv,"LV측 수전",f.hv));
+    addUnit(f.mv, mk(f.legs.mv,"MV측 수전",f.hv));
+    addUnit(f.hv, mk(f.legs.hv,"HV측 수전(역방향)",f.mv));
+  });
   function unitsForSite(s){
-    const seen = new Set(), out = [];
+    const seen = {}, out = [];
     s.loadBuses.forEach(b=>{
-      unitsForBus(b).forEach(u=>{
+      (unitsByBus[b]||[]).forEach(u=>{
         if (u.subtype === "GSU") return;
         const k = u.name + "|" + u.thisBus;
-        if (seen.has(k)) return;
-        seen.add(k); out.push(u);
+        if (seen[k]) return;
+        seen[k] = 1; out.push(u);
       });
     });
     return out;
   }
 
-  function computeScenarios(units, sFlowActual){
-    const totalBase  = units.reduce((s,u)=>s+u.base,0);
-    const totalEmerS = units.reduce((s,u)=>s+u.emerS,0);
-    const totalEmerL = units.reduce((s,u)=>s+u.emerL,0);
+  function computeScenarios(units, sFlow){
+    const totalBase  = units.reduce((a,u)=>a+u.base,0);
+    const totalEmerS = units.reduce((a,u)=>a+u.emerS,0);
+    const totalEmerL = units.reduce((a,u)=>a+u.emerL,0);
     let n1 = null;
     if (units.length >= 2){
-      let maxIdx = 0;
-      units.forEach((u,i)=>{ if (u.base > units[maxIdx].base) maxIdx = i; });
-      const removed = units[maxIdx];
-      n1 = { removedName: removed.name, removedIdx:maxIdx,
-        base: totalBase-removed.base, emerS: totalEmerS-removed.emerS, emerL: totalEmerL-removed.emerL };
+      let mi = 0;
+      units.forEach((u,i)=>{ if (u.base > units[mi].base) mi = i; });
+      const rm = units[mi];
+      n1 = { removedName:rm.name, removedIdx:mi,
+             base:totalBase-rm.base, emerS:totalEmerS-rm.emerS, emerL:totalEmerL-rm.emerL };
     }
-    return { totalBase, totalEmerS, totalEmerL, n0Avail: totalBase - sFlowActual, n1 };
+    return { totalBase:totalBase, totalEmerS:totalEmerS, totalEmerL:totalEmerL,
+             n0Avail: totalBase - sFlow, n1:n1 };
   }
 
-  /* ============ formatting ============ */
-  function fmt(n, d){ d = (d===undefined)?2:d; return (n||0).toLocaleString('ko-KR', {minimumFractionDigits:d, maximumFractionDigits:d}); }
-  function pctClass(p){ return p>=100 ? 'bad' : (p>=80 ? 'warn' : 'ok'); }
-  function loadBarHtml(pct){
-    const cls = pctClass(pct);
-    const w = Math.round(Math.min(Math.max(pct,0),100)*10)/10;
-    return '<div class="loadbar-wrap"><div class="loadbar"><div class="fill '+cls+'" style="width:'+w+'%"></div></div><span class="pct '+cls+'">'+fmt(pct,1)+'%</span></div>';
+  function siteCapacity(s){
+    if (s._cap) return s._cap;
+    const units = unitsForSite(s);
+    const P = units.reduce((a,u)=>a+u.flowP,0);
+    const Q = units.reduce((a,u)=>a+u.flowQ,0);
+    const S = Math.sqrt(P*P + Q*Q);
+    const pf = S>0 ? Math.abs(P)/S : 1;
+    const sc = units.length ? computeScenarios(units, S) : null;
+    const safeMVA = sc ? (sc.n1 ? sc.n1.base - S : sc.n0Avail) : 0;
+    s._cap = { units:units, P:P, Q:Q, S:S, pf:pf, sc:sc,
+               safeMVA:safeMVA, safeMW:safeMVA*pf,
+               maxPct: units.length ? Math.max.apply(null, units.map(u=>u.loadPct)) : 0 };
+    return s._cap;
   }
-  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  /* ============ 검색 UI ============ */
+  /* 선로 N-1 지표
+     같은 경로(그룹)의 병렬 회선 1회선이 고장나면 남은 회선이 그 몫을 나눠 받는다고
+     보고, 그룹별 예상 부하율 p*n/(n-1) 중 최댓값을 취한다. 정적 스크리닝용 근사치. */
+  function siteLineN1(s){
+    if (s._ln) return s._ln;
+    const arr = (linesBySite[s.key]||[]).filter(x=>!x.internal && !x.f.lowZ && x.f.rateA>0);
+    const grp = {};
+    arr.forEach(x=>{
+      const k = x.f.pn.group + "|" + x.nearBus;
+      if (!grp[k]) grp[k] = {n:0, nIn:0, pct:0, kv:x.f.kv, name:x.f.pn.group};
+      grp[k].n++;
+      if (x.f.inSvc){ grp[k].nIn++; grp[k].pct = Math.max(grp[k].pct, x.f.loadPct); }
+    });
+    let worst = 0, n1 = 0, worstName = "", n1Name = "";
+    Object.values(grp).forEach(g=>{
+      if (!g.nIn) return;
+      if (g.pct > worst){ worst = g.pct; worstName = g.name; }
+      const est = g.nIn >= 2 ? g.pct * g.nIn / (g.nIn - 1) : g.pct;   // 단일회선은 전량 상실
+      const single = g.nIn < 2;
+      if (est > n1){ n1 = est; n1Name = g.name + (single ? " (단일회선)" : ""); }
+    });
+    s._ln = { worstPct:worst, n1Pct:n1, worstName:worstName, n1Name:n1Name, nGroup:Object.keys(grp).length };
+    return s._ln;
+  }
+
+  /* ==================================================================
+     11. 사업소 유형 판정 / 검색 인덱스
+     ================================================================== */
+  Object.values(sites).forEach(s=>{
+    s.kvList  = [...s.kvs].sort((a,b)=>b-a);
+    s.maxKv   = s.kvList.length ? s.kvList[0] : 0;
+    s.region  = [...s.regions][0] || "";
+    s.area    = [...s.areas][0] || "";
+    s.genPmax = s.gens.reduce((a,g)=>a+g.pmax,0);
+    s.genP    = s.gens.reduce((a,g)=>a+(g.inSvc?g.p:0),0);
+    s.genOn   = s.gens.filter(g=>g.inSvc).length;
+    s.loadP   = s.loads.reduce((a,l)=>a+l.p,0);
+    s.loadQ   = s.loads.reduce((a,l)=>a+l.q,0);
+    s.nCkt    = (linesBySite[s.key]||[]).length;
+    s.hasGen  = s.gens.length > 0;
+    s.hasMTr  = (t3BySite[s.key]||[]).length > 0 || (t2BySite[s.key]||[]).some(f=>f.subtype==="MTr");
+    if (s.key.indexOf("변환소") >= 0)                                    s.type = "변환소";
+    else if (s.hasGen && (s.loads.length === 0 || s.genPmax > s.loadP))   s.type = "발전소";
+    else if (s.loads.length > 0 || s.hasMTr)                             s.type = "변전소";
+    else if (s.hasGen)                                                   s.type = "발전소";
+    else                                                                 s.type = "개폐/연계";
+    s.searchText = (s.key + " " + s.buses.join(" ") + " " +
+      s.buses.map(b=>busInfo[b].name).join(" ") + " " +
+      s.gens.map(g=>g.name).join(" ") + " " + s.region).toLowerCase();
+  });
+  const siteList = Object.values(sites).sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+
+  /* ==================================================================
+     12. 테이블 빌더
+     ================================================================== */
+  function lineTitle(site, g){
+    let t = cleanGroup(g.g);
+    if (t.indexOf("–") < 0) t = site.name + " – " + g.farSite;
+    if (g.typeLabel === "인출") return t + " 인출선";
+    if (g.typeLabel === "연계") return t + " 연계선";
+    return t + " 송전선로";
+  }
+
+  function groupLines(s){
+    const arr = linesBySite[s.key] || [];
+    const groups = {};
+    arr.forEach(x=>{
+      const key = x.f.pn.group + "|" + x.farSite + "|" + x.nearBus + "|" + Math.round(x.f.kv);
+      if (!groups[key]) groups[key] = {
+        g:x.f.pn.group, kv:x.f.kv, typeLabel:x.f.pn.typeLabel,
+        farSite:x.farSite, farBus:x.farBus, nearBus:x.nearBus, internal:x.internal,
+        lengthKm:x.f.lengthKm, cableKm:x.f.cableKm, rate:x.f.rateA,
+        ckts:[], nOut:0, P:0, Q:0, S:0, maxPct:0, lowZ:false };
+      const G = groups[key];
+      G.ckts.push(x);
+      if (x.f.lowZ) G.lowZ = true;
+      if (x.f.inSvc){ G.P += x.P; G.Q += x.Q; G.S += x.S; G.maxPct = Math.max(G.maxPct, x.f.loadPct); }
+      else G.nOut++;
+    });
+    return Object.values(groups).sort((a,b)=>
+      Math.round(b.kv)!==Math.round(a.kv) ? b.kv-a.kv : b.maxPct-a.maxPct);
+  }
+
+  function buildLineTable(s){
+    const arr = linesBySite[s.key] || [];
+    if (!arr.length) return '<div class="empty-note">이 설비에 직접 연결된 교류 송전선로가 없습니다.</div>';
+    const list = groupLines(s);
+
+    const byKv = {};
+    list.forEach(g=>{ const k=Math.round(g.kv); (byKv[k]=byKv[k]||[]).push(g); });
+
+    let rows = "";
+    Object.keys(byKv).map(Number).sort((a,b)=>b-a).forEach(k=>{
+      const gs = byKv[k];
+      rows += '<tr class="grouphead"><td colspan="8">'+kvLabel(k)+' 계통 · '+gs.length+
+              '개 선로 · 총 '+gs.reduce((a,g)=>a+g.ckts.length,0)+'회선</td></tr>';
+      gs.forEach(g=>{
+        const dir = g.internal ? '<span class="badge dir-int">소내</span>'
+          : (g.P < -0.05 ? '<span class="badge dir-in">유입</span>'
+          : (g.P >  0.05 ? '<span class="badge dir-out">유출</span>'
+          : '<span class="badge dir-int">균형</span>'));
+        const nearNm = busInfo[g.nearBus] ? busInfo[g.nearBus].name : g.nearBus;
+        const farNm  = busInfo[g.farBus]  ? busInfo[g.farBus].name  : g.farBus;
+        const detail = g.ckts.map(x =>
+          '<div>'+esc(x.f.raw)+(x.f.pn.ckt?'':' #'+x.f.id)+' &nbsp;|&nbsp; '+
+          (x.f.inSvc?'운전':'<span style="color:var(--danger)">휴전</span>')+
+          ' &nbsp;|&nbsp; P '+fmt(x.P,1)+'MW / Q '+fmt(x.Q,1)+'MVAR / S '+fmt(x.S,1)+'MVA'+
+          ' &nbsp;|&nbsp; 부하율 '+fmt(x.f.loadPct,1)+'%</div>').join("");
+        rows +=
+          '<tr>'+
+          '<td class="name-cell"><div class="lname">'+esc(lineTitle(s,g))+'</div>'+
+            '<div class="subline">'+kvLabel(g.kv)+' '+g.typeLabel+' · 데이터명 '+esc(g.g)+'</div>'+
+            '<div class="subline">'+esc(nearNm)+' ↔ '+esc(farNm)+'</div>'+
+            (g.lowZ ? '<div class="subline" style="color:var(--warn)">※ 임피던스가 극히 작은 단거리 연결선 — 위상각 정밀도 한계로 조류값 신뢰도 낮음</div>' : '')+
+            '<details class="ckt"><summary>회선별 상세 ('+g.ckts.length+'회선)</summary><div class="ckt-list">'+detail+'</div></details>'+
+          '</td>'+
+          '<td>'+kvBadge(g.kv)+'</td>'+
+          '<td class="name-cell"><b>'+(g.internal?esc(g.farSite):link(g.farSite))+'</b>'+
+            '<div class="subline">'+esc(farNm)+' (bus '+g.farBus+')</div></td>'+
+          '<td>'+g.ckts.length+'회선'+(g.nOut>0?'<div class="subline" style="color:var(--danger)">휴전 '+g.nOut+'</div>':'')+
+            '<div class="subline">'+g.typeLabel+'</div></td>'+
+          '<td>'+fmt(g.lengthKm,1)+(g.cableKm>0?'<div class="subline">지중 '+fmt(g.cableKm,1)+'km</div>':'')+'</td>'+
+          '<td>'+fmt(g.rate,0)+'<div class="subline">회선당</div></td>'+
+          '<td>'+fmt(Math.abs(g.P),1)+' MW<div class="subline">S '+fmt(g.S,1)+' MVA</div><div class="subline">'+dir+'</div></td>'+
+          '<td>'+loadBarHtml(g.maxPct)+'<div class="subline">최대회선 기준</div></td>'+
+          '</tr>';
+      });
+    });
+
+    const totIn  = list.reduce((a,g)=>a + (g.P<0 ? -g.P : 0), 0);
+    const totOut = list.reduce((a,g)=>a + (g.P>0 ?  g.P : 0), 0);
+    const worst  = list.reduce((a,g)=>Math.max(a,g.maxPct), 0);
+    const nb = [...new Set(list.filter(g=>!g.internal).map(g=>g.farSite))];
+    const ln = siteLineN1(s);
+
+    return '<div class="kpi-grid" style="margin-bottom:10px;">'+
+      '<div class="kpi"><div class="lbl">접속 선로</div><div class="val">'+list.length+'</div><div class="sub">'+arr.length+' 회선</div></div>'+
+      '<div class="kpi"><div class="lbl">인접 변전소</div><div class="val">'+nb.length+'</div><div class="sub">'+esc(nb.slice(0,2).join(', '))+(nb.length>2?' 외':'')+'</div></div>'+
+      '<div class="kpi"><div class="lbl">유입 / 유출</div><div class="val">'+fmt(totIn,0)+' / '+fmt(totOut,0)+'</div><div class="sub">MW</div></div>'+
+      '<div class="kpi"><div class="lbl">최대 선로 부하율</div><div class="val '+pctClass(worst)+'">'+fmt(worst,1)+'%</div>'+
+        '<div class="sub">N-1 예상 <span class="'+pctClass(ln.n1Pct)+'">'+fmt(ln.n1Pct,1)+'%</span></div></div>'+
+      '</div>'+
+      '<div class="scrollx"><table>'+
+      '<thead><tr><th>송전선로명</th><th>전압</th><th>상대 변전소</th><th>회선수</th><th>긍장(km)</th><th>정격(MVA)</th><th>현재 조류</th><th>부하율</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  function buildTrafoTable(s){
+    const t2 = t2BySite[s.key] || [], t3 = t3BySite[s.key] || [];
+    if (!t2.length && !t3.length) return '<div class="empty-note">이 설비에 등록된 변압기가 없습니다.</div>';
+    let rows = "";
+    t2.slice().sort((a,b)=>b.rateA-a.rateA).forEach(f=>{
+      rows += '<tr'+(f.inSvc?'':' class="removed"')+'>'+
+        '<td class="name-cell"><div class="lname">'+esc(f.name)+'</div><div class="subline">2권선 · '+
+          (f.subtype==='GSU'?'발전기 승압(GSU)':'주변압기')+(f.inSvc?'':' · <span style="color:var(--danger)">휴전</span>')+'</div></td>'+
+        '<td>'+kvBadge(f.vnHv)+' → '+kvBadge(f.vnLv)+'</td>'+
+        '<td class="name-cell">'+esc(f.hvName)+'<div class="subline">→ '+esc(f.lvName)+'</div></td>'+
+        '<td>'+fmt(f.rateA,0)+'<div class="subline">단기 '+fmt(f.rateB,0)+' / 장기 '+fmt(f.rateC,0)+'</div></td>'+
+        '<td>'+fmt(f.Plv,1)+' MW<div class="subline">S '+fmt(f.Smax,1)+' MVA</div></td>'+
+        '<td>'+loadBarHtml(f.loadPct)+'</td></tr>';
+    });
+    t3.forEach(f=>{
+      rows += '<tr'+(f.inSvc?'':' class="removed"')+'>'+
+        '<td class="name-cell"><div class="lname">'+esc(f.name)+'</div><div class="subline">3권선 주변압기'+
+          (f.inSvc?'':' · <span style="color:var(--danger)">휴전</span>')+'</div></td>'+
+        '<td>'+kvBadge(f.vnHv)+' → '+kvBadge(f.vnMv)+' → '+kvBadge(f.vnLv)+'</td>'+
+        '<td class="name-cell">'+esc(f.hvName)+'<div class="subline">'+esc(f.mvName)+' / '+esc(f.lvName)+'</div></td>'+
+        '<td>'+fmt(f.legs.hv.rate,0)+'<div class="subline">MV '+fmt(f.legs.mv.rate,0)+' / LV '+fmt(f.legs.lv.rate,0)+'</div></td>'+
+        '<td>'+fmt(-f.legs.mv.P,1)+' MW<div class="subline">MV측 S '+fmt(f.legs.mv.S,1)+' MVA</div></td>'+
+        '<td>'+loadBarHtml(f.maxLoadPct)+'<div class="subline">최대권선</div></td></tr>';
+    });
+    return '<div class="scrollx"><table>'+
+      '<thead><tr><th>변압기명</th><th>전압</th><th>연결 모선</th><th>정격(MVA)</th><th>현재 조류</th><th>부하율</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  function buildGenPanel(s){
+    if (!s.gens.length) return "";
+    const rows = s.gens.map(g=>
+      '<tr'+(g.inSvc?'':' class="removed"')+'>'+
+      '<td class="name-cell"><div class="lname">'+esc(g.name)+'</div><div class="subline">bus '+g.bus+' · '+
+        (busInfo[g.bus]?kvLabel(busInfo[g.bus].kv):'')+(g.inSvc?'':' · <span style="color:var(--danger)">정지</span>')+'</div></td>'+
+      '<td>'+fmt(g.pmax,1)+'</td><td>'+fmt(g.inSvc?g.p:0,1)+'</td><td>'+fmt(g.inSvc?g.q:0,1)+'</td>'+
+      '<td>'+fmt(g.mbase,1)+'</td>'+
+      '<td>'+(g.pmax>0 ? loadBarHtml((g.inSvc?g.p:0)/g.pmax*100) : '-')+'</td></tr>').join("");
+    return '<div class="panel">'+
+      '<h2>발전 설비 <span class="cnt">'+s.gens.length+'기 (가동 '+s.genOn+'기)</span></h2>'+
+      '<div class="h2sub">이 구내에 설치된 발전기와 현재 출력입니다. 승압변압기(GSU)를 거쳐 계통에 연결됩니다.</div>'+
+      '<div class="kpi-grid" style="margin-bottom:10px;">'+
+        '<div class="kpi"><div class="lbl">총 설비용량</div><div class="val">'+fmt(s.genPmax,0)+'</div><div class="sub">MW</div></div>'+
+        '<div class="kpi"><div class="lbl">현재 총 출력</div><div class="val ok">'+fmt(s.genP,0)+'</div><div class="sub">MW</div></div>'+
+        '<div class="kpi"><div class="lbl">이용률</div><div class="val">'+(s.genPmax>0?fmt(s.genP/s.genPmax*100,1):'-')+'%</div><div class="sub">현재출력 / 설비용량</div></div>'+
+        '<div class="kpi"><div class="lbl">가동 대수</div><div class="val">'+s.genOn+' / '+s.gens.length+'</div><div class="sub">기</div></div>'+
+      '</div>'+
+      '<div class="scrollx"><table>'+
+      '<thead><tr><th>발전기</th><th>설비용량(MW)</th><th>현재출력(MW)</th><th>무효(MVAR)</th><th>정격(MVA)</th><th>이용률</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table></div></div>';
+  }
+
+  function buildBusTable(s){
+    const rows = s.buses.slice().sort((a,b)=>busInfo[b].kv-busInfo[a].kv).map(b=>{
+      const bi = busInfo[b], vOk = !(bi.vm>bi.vmax || bi.vm<bi.vmin), ld = loadByBus[b];
+      const gs = genByBus[b] || [];
+      return '<tr><td class="name-cell"><div class="lname">'+esc(bi.name)+'</div>'+
+        '<div class="subline">bus '+b+' · '+bi.type+(bi.inService?'':' · 휴전')+'</div></td>'+
+        '<td>'+kvBadge(bi.kv)+'</td>'+
+        '<td style="color:'+(vOk?'inherit':'var(--danger)')+'">'+fmt(bi.vm,4)+' pu'+
+          '<div class="subline">'+fmt(bi.vm*bi.kv,1)+' kV'+(vOk?'':' · 범위이탈')+'</div></td>'+
+        '<td>'+fmt(bi.va_deg,2)+'°</td>'+
+        '<td>'+(ld ? fmt(ld.p,1)+' MW<div class="subline">'+fmt(ld.q,1)+' MVAR</div>' : '-')+'</td>'+
+        '<td>'+(gs.length ? gs.length+'기<div class="subline">'+fmt(gs.reduce((a,g)=>a+g.pmax,0),0)+' MW</div>' : '-')+'</td></tr>';
+    }).join("");
+    return '<div class="scrollx"><table>'+
+      '<thead><tr><th>모선명</th><th>전압등급</th><th>운전전압</th><th>위상각</th><th>등록부하</th><th>발전기</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  function buildCompTable(s){
+    const shunts = [], facts = [];
+    s.buses.forEach(b=>{
+      (shuntByBus[b]||[]).forEach(x=>shunts.push(x));
+      (factsByBus[b]||[]).forEach(x=>facts.push(x));
+    });
+    if (!shunts.length && !facts.length) return "";
+    let html = "";
+    if (shunts.length){
+      const on  = shunts.filter(x=>x.inSvc);
+      const off = shunts.filter(x=>!x.inSvc);
+      const capQ = on.filter(x=>x.q<0).reduce((a,x)=>a+Math.abs(x.q),0);
+      const reaQ = on.filter(x=>x.q>0).reduce((a,x)=>a+x.q,0);
+      const rsvQ = off.reduce((a,x)=>a+Math.abs(x.q),0);
+      html += '<h3>분로 보상설비 (Shunt) <span class="cnt">'+shunts.length+'뱅크</span></h3>'+
+        '<div class="h3sub">투입 중 — 콘덴서 '+fmt(capQ,0)+' MVAR · 리액터 '+fmt(reaQ,0)+' MVAR'+
+        (off.length ? ' / 개방(예비) '+off.length+'뱅크 '+fmt(rsvQ,0)+' MVAR' : '')+
+        ' — 콘덴서를 투입하면 변압기 무효전력 부담이 줄어 부하율이 내려갑니다.</div>'+
+        '<div class="scrollx"><table><thead><tr><th>설비명</th><th>모선</th><th>구분</th><th>상태</th><th>용량(MVAR)</th></tr></thead><tbody>'+
+        shunts.map(x=>'<tr'+(x.inSvc?'':' class="dim"')+'><td class="name-cell">'+esc(x.name)+'</td>'+
+          '<td>'+(busInfo[x.bus]?esc(busInfo[x.bus].name):x.bus)+'</td>'+
+          '<td>'+(x.kind==='SWITCHED'?'개폐형':'고정형')+'</td>'+
+          '<td>'+(x.inSvc?'<span class="badge dir-in">투입</span>':'<span class="badge gsu">개방(예비)</span>')+'</td>'+
+          '<td>'+(x.q<0?'콘덴서 ':'리액터 ')+fmt(Math.abs(x.q),1)+'</td></tr>').join("")+
+        '</tbody></table></div>';
+    }
+    if (facts.length){
+      html += '<h3>FACTS 설비 <span class="cnt">'+facts.length+'대</span></h3>'+
+        '<div class="h3sub">STATCOM · UPFC 등 능동형 무효전력 제어설비입니다.</div>'+
+        '<div class="scrollx"><table><thead><tr><th>설비명</th><th>모선</th><th>전압목표(pu)</th><th>용량(MVAR)</th></tr></thead><tbody>'+
+        facts.map(x=>'<tr><td class="name-cell">'+esc(x.name)+'</td>'+
+          '<td>'+(busInfo[x.bus]?esc(busInfo[x.bus].name):x.bus)+'</td>'+
+          '<td>'+fmt(x.vset,3)+'</td><td>±'+fmt(x.shmax,0)+'</td></tr>').join("")+
+        '</tbody></table></div>';
+    }
+    return html;
+  }
+
+  function buildHvdcBlock(s){
+    const arr = hvdcBySite[s.key] || [];
+    if (!arr.length) return "";
+    return '<h3>HVDC 연계 <span class="cnt">'+arr.length+'링크</span></h3>'+
+      '<div class="h3sub">직류 송전 설비입니다. 교류 조류계산과 별도로 지정된 전력을 주고받으므로 위 교류 선로 표에는 포함되지 않습니다.</div>'+
+      '<div class="scrollx"><table><thead><tr><th>설비명</th><th>방식</th><th>직류전압</th><th>전송용량</th><th>양단 모선</th><th>긍장(km)</th></tr></thead><tbody>'+
+      arr.map(d=>'<tr><td class="name-cell">'+esc(d.name)+'</td><td>'+d.kind+'</td>'+
+        '<td>'+fmt(d.kv,0)+' kV</td><td>'+fmt(d.mw,0)+' MW</td>'+
+        '<td class="name-cell">'+esc(busInfo[d.a]?busInfo[d.a].name:d.a)+' ↔ '+esc(busInfo[d.b]?busInfo[d.b].name:d.b)+'</td>'+
+        '<td>'+fmt(d.lengthKm,1)+'</td></tr>').join("")+
+      '</tbody></table></div>';
+  }
+
+  function scenarioRow(label, desc, mva, pf){
+    return '<div class="scenario-row"><div class="label">'+label+'<span class="desc">'+desc+'</span></div>'+
+      '<div class="figs"><div class="mva">'+fmt(mva,2)+' MVA</div><div class="mw">≈ '+fmt(mva*pf,2)+' MW</div></div></div>';
+  }
+
+  /* ==================================================================
+     13. 사업소 상세 화면
+     ================================================================== */
+  function selectSite(key){
+    const s = sites[key];
+    if (!s) return;
+    searchInput.value = "";                 // 검색창은 항상 빈칸으로 되돌린다
+    suggestBox.classList.remove("show");
+
+    const cap = siteCapacity(s);
+    const units = cap.units, hasRx = units.length > 0;
+    const sc = cap.sc, pf = cap.pf, S = cap.S, P = cap.P;
+    const nCkt = (linesBySite[s.key]||[]).length;
+    const nTr  = (t2BySite[s.key]||[]).length + (t3BySite[s.key]||[]).length;
+
+    /* ---- hero ---- */
+    let heroClass = "hero", headline, subline, kpis;
+    const heroTag = s.type + " · " + (s.region||"-") + " · " + (s.area||"-") + " · 모선 " + s.buses.length + "개";
+    if (hasRx){
+      const ok = cap.safeMVA > 0;
+      headline = ok
+        ? '지금 최대 <b>'+fmt(cap.safeMW,1)+' MW</b> ('+fmt(cap.safeMVA,1)+' MVA)까지 새로 받을 수 있어요'
+        : '지금 이 변전소는 새로 받을 수 있는 여유가 <b>부족</b>해요';
+      subline = (sc.n1 ? '변압기 1대 고장(N-1)까지 대비한 안전 기준' : '수전 변압기가 1대뿐이라 N-0(전체 정상) 기준') +
+        ' · 현재 <b>'+fmt(S,1)+' MVA</b> ('+fmt(P,1)+' MW)를 이미 쓰고 있습니다.' +
+        (s.hasGen ? ' 구내에 발전설비 '+fmt(s.genPmax,0)+'MW가 병설되어 있으나 여유 계산에는 반영하지 않았습니다.' : '');
+      kpis =
+        '<div class="hkpi"><div class="l">수전 변압기</div><div class="v">'+units.length+'<small> 대</small></div></div>'+
+        '<div class="hkpi"><div class="l">설비 총 용량</div><div class="v">'+fmt(sc.totalBase,0)+'<small> MVA</small></div></div>'+
+        '<div class="hkpi"><div class="l">접속 송전선로</div><div class="v">'+nCkt+'<small> 회선</small></div></div>'+
+        '<div class="hkpi"><div class="l">최고 전압등급</div><div class="v">'+kvLabel(s.maxKv)+'</div></div>';
+    } else if (s.hasGen){
+      heroClass = "hero gen";
+      headline = '설비용량 <b>'+fmt(s.genPmax,0)+' MW</b> 발전소 · 현재 '+fmt(s.genP,0)+' MW 발전 중';
+      subline = '발전기 '+s.gens.length+'기(가동 '+s.genOn+'기) · 승압변압기를 거쳐 '+kvLabel(s.maxKv)+
+        ' 계통으로 송전합니다. 아래에서 송출 선로별 부하율을 확인하세요.';
+      kpis =
+        '<div class="hkpi"><div class="l">발전기</div><div class="v">'+s.gens.length+'<small> 기</small></div></div>'+
+        '<div class="hkpi"><div class="l">설비용량</div><div class="v">'+fmt(s.genPmax,0)+'<small> MW</small></div></div>'+
+        '<div class="hkpi"><div class="l">접속 송전선로</div><div class="v">'+nCkt+'<small> 회선</small></div></div>'+
+        '<div class="hkpi"><div class="l">최고 전압등급</div><div class="v">'+kvLabel(s.maxKv)+'</div></div>';
+    } else {
+      heroClass = "hero sw";
+      headline = kvLabel(s.maxKv)+' 계통 <b>'+s.type+'</b> · 송전선로 '+nCkt+'회선 접속';
+      subline = '수전 부하가 등록되지 않은 설비입니다. 계통 연계 상태와 선로 부하율 위주로 확인하세요.';
+      kpis =
+        '<div class="hkpi"><div class="l">접속 송전선로</div><div class="v">'+nCkt+'<small> 회선</small></div></div>'+
+        '<div class="hkpi"><div class="l">변압기</div><div class="v">'+nTr+'<small> 대</small></div></div>'+
+        '<div class="hkpi"><div class="l">모선</div><div class="v">'+s.buses.length+'<small> 개</small></div></div>'+
+        '<div class="hkpi"><div class="l">최고 전압등급</div><div class="v">'+kvLabel(s.maxKv)+'</div></div>';
+    }
+
+    /* ---- 수전 변압기 ---- */
+    let rxBlock = "";
+    if (hasRx){
+      const unitRows = units.map((u,i)=>
+        '<tr class="'+(sc.n1 && i===sc.n1.removedIdx ? 'removed' : '')+'">'+
+        '<td class="name-cell"><div class="lname">'+esc(u.name)+'</div><div class="subline">'+u.type+' · '+u.side+'</div></td>'+
+        '<td>'+fmt(u.base,1)+'<div class="subline">단기 '+fmt(u.emerS,0)+' / 장기 '+fmt(u.emerL,0)+'</div></td>'+
+        '<td>'+fmt(u.flowP,1)+' MW<div class="subline">S '+fmt(u.flowS,1)+' MVA</div></td>'+
+        '<td>'+loadBarHtml(u.loadPct)+'</td></tr>').join("");
+      rxBlock =
+        '<div class="panel">'+
+        '<h2>수전 변압기 부하율 <span class="cnt">'+units.length+'대</span></h2>'+
+        '<div class="h2sub">이 변전소에서 전기를 받아 배전측으로 내리는 변압기입니다. 100%를 넘으면 과부하입니다.'+
+        (sc.n1 ? ' 취소선 표시된 변압기가 N-1 검토에서 제외되는 최대 용량기입니다.' : '')+'</div>'+
+        '<div class="scrollx"><table><thead><tr><th>변압기</th><th>정격(MVA)</th><th>현재 조류</th><th>부하율</th></tr></thead>'+
+        '<tbody>'+unitRows+'</tbody></table></div>'+
+        '<div class="note">설비 용량 합계 — 정격 '+fmt(sc.totalBase,1)+' MVA · 단기비상 '+fmt(sc.totalEmerS,1)+
+        ' MVA · 장기비상 '+fmt(sc.totalEmerL,1)+' MVA<br>'+
+        '등록부하 합계 P '+fmt(s.loadP,2)+' MW / Q '+fmt(s.loadQ,2)+' MVAR (부하모선 '+s.loadBuses.length+'개) · 현재 역률 '+fmt(pf*100,1)+'%</div>'+
+        '</div>';
+    }
+
+    /* ---- 여유 시나리오 ---- */
+    let scenBlock = "";
+    if (hasRx){
+      const kpiCls = v => v >= 0 ? (v > sc.totalBase*0.15 ? 'ok' : 'warn') : 'bad';
+      const n1Block = sc.n1
+        ? scenarioRow('평소 (변압기 전체 정상 운전)','설비를 100% 다 쓸 때의 이론상 최대 여유', sc.n0Avail, pf)+
+          scenarioRow('고장 대비 · 정격 기준 ('+esc(sc.n1.removedName)+' 1대 정지)','가장 큰 변압기 1대가 고장나도 나머지로 버티는 여유 — 실무 안전 기준', sc.n1.base-S, pf)+
+          scenarioRow('고장 대비 · 단기 비상정격','고장 시 잠깐 정격을 초과해 견디는 범위까지 활용', sc.n1.emerS-S, pf)+
+          scenarioRow('고장 대비 · 장기 비상정격','더 긴 시간 버티는 장기 비상정격까지 활용 (가장 낙관적 상한)', sc.n1.emerL-S, pf)
+        : scenarioRow('평소 (변압기 전체 정상 운전)','설비를 100% 다 쓸 때의 이론상 최대 여유', sc.n0Avail, pf)+
+          '<div class="scenario-row"><div class="label">고장 대비 여유 계산 불가<span class="desc">수전 변압기가 1대뿐이라 고장 시 대체 설비가 없습니다.</span></div><div class="figs"><div class="mva">-</div></div></div>';
+      scenBlock =
+        '<div class="panel">'+
+        '<h2>수전 가능 여유 용량 시나리오</h2>'+
+        '<div class="h2sub">상황별로 얼마나 더 받을 수 있는지 4가지 기준으로 보여드립니다.</div>'+
+        '<div class="kpi-grid" style="margin-bottom:4px;">'+
+          '<div class="kpi"><div class="lbl">평소 여유</div><div class="val '+kpiCls(sc.n0Avail)+'">'+fmt(sc.n0Avail,1)+' MVA</div><div class="sub">≈ '+fmt(sc.n0Avail*pf,1)+' MW</div></div>'+
+          '<div class="kpi"><div class="lbl">고장대비(N-1) 정격 여유</div><div class="val '+(sc.n1?kpiCls(sc.n1.base-S):'')+'">'+(sc.n1?fmt(sc.n1.base-S,1)+' MVA':'-')+'</div><div class="sub">'+(sc.n1?'≈ '+fmt((sc.n1.base-S)*pf,1)+' MW':'변압기 1대뿐')+'</div></div>'+
+          '<div class="kpi"><div class="lbl">최대 부하율 변압기</div><div class="val '+pctClass(cap.maxPct)+'">'+fmt(cap.maxPct,1)+'%</div><div class="sub">현재 운전 상태</div></div>'+
+          '<div class="kpi"><div class="lbl">역률(현재)</div><div class="val">'+fmt(pf*100,1)+'%</div><div class="sub">P/S 기준</div></div>'+
+        '</div>'+
+        '<div class="scenario">'+n1Block+'</div>'+
+        '<h3>희망 수전 용량 검토</h3>'+
+        '<div class="h3sub">받고 싶은 용량을 입력하면 시나리오별로 충분한지 바로 확인해 드립니다.</div>'+
+        '<div class="checkrow">'+
+          '<div class="field"><label>희망 수전 용량 (MW)</label><input type="number" id="reqMW" placeholder="예: 9.9" step="0.1" min="0"></div>'+
+          '<div class="field"><label>가정 역률 cos φ</label><input type="number" id="reqPF" value="0.95" step="0.01" min="0.5" max="1"></div>'+
+        '</div><div id="verdictBox"></div></div>';
+    }
+
+    resultArea.innerHTML =
+      '<div class="'+heroClass+'">'+
+        '<div class="tag">'+esc(heroTag)+' <a href="#" class="backlink" id="backOv">← 전체 개요</a></div>'+
+        '<div class="sitename">'+esc(s.name)+'</div>'+
+        '<div class="headline">'+headline+'</div>'+
+        '<div class="sub">'+subline+'</div>'+
+        '<div class="hero-kpis">'+kpis+'</div>'+
+      '</div>'+
+      '<div class="panel">'+
+        '<h2>접속 송전선로 <span class="cnt">'+nCkt+'회선</span></h2>'+
+        '<div class="h2sub">'+esc(s.name)+'의 각 모선에 연결된 송전선로입니다. 선로명 · 전압 · 상대 변전소 · 회선수 · 긍장 · 정격 · 현재 조류 · 부하율을 전압등급별로 정리했습니다. 방향은 이 설비 기준(유입 = 받는 중, 유출 = 보내는 중)이며, 상대 변전소를 누르면 그 설비로 이동합니다.</div>'+
+        buildLineTable(s) + buildHvdcBlock(s)+
+      '</div>'+
+      rxBlock + buildGenPanel(s) +
+      '<div class="panel">'+
+        '<h2>변압기 설비 <span class="cnt">'+nTr+'대</span></h2>'+
+        '<div class="h2sub">이 구내의 모든 변압기(주변압기 · 승압변압기 포함) 정격과 현재 부하율입니다.</div>'+
+        buildTrafoTable(s) + buildCompTable(s)+
+      '</div>'+
+      scenBlock +
+      '<div class="panel">'+
+        '<h2>모선 현황 <span class="cnt">'+s.buses.length+'개</span></h2>'+
+        '<div class="h2sub">이 설비를 구성하는 모선의 운전전압과 위상각입니다. 허용범위를 벗어나면 붉게 표시됩니다.</div>'+
+        buildBusTable(s)+
+        '<p class="note">'+
+        '※ 조류(P·Q·S)는 계통 상태추정 스냅샷의 모선 전압·위상각으로부터 표준 조류계산식으로 직접 산출한 값이며, 무효보상설비 등의 영향으로 등록 부하량과 차이가 날 수 있습니다. '+
+        '선로 부하율은 회선별 양단 조류 중 큰 값 ÷ 상시정격(rate A) 기준입니다. '+
+        '고장대비(N-1)는 가장 용량이 큰 변압기 1대가 멈춘다고 가정한 정적 점검이며, 실제 고장 시 조류 재분배 · 열적 여유 · 계통 안정도는 반영하지 않습니다. '+
+        '3권선 변압기는 별도 비상정격이 없어 정격을 그대로 적용했습니다. 22.9kV급 배전선로 회로 정보는 포함되어 있지 않아 배전측 여유는 변압기 저압단 부하율로 갈음합니다. '+
+        '최종 수전 가능 용량은 KEPCO 전력계통영향평가(전평) 및 N-1 고장계산으로 확정됩니다.'+
+        '</p>'+
+      '</div>';
+
+    const back = document.getElementById("backOv");
+    if (back && back.addEventListener) back.addEventListener("click", e=>{ e.preventDefault(); window.showOverview(); });
+    if (hasRx) bindVerdict(sc, S, pf);
+    if (window.scrollTo) window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function bindVerdict(sc, S, pf){
+    const reqMW = document.getElementById("reqMW");
+    const reqPF = document.getElementById("reqPF");
+    if (!reqMW || !reqPF) return;
+    function update(){
+      const box = document.getElementById("verdictBox");
+      const mw = parseFloat(reqMW.value);
+      const pv = parseFloat(reqPF.value) || 0.95;
+      if (!mw || mw <= 0){ box.innerHTML = ""; return; }
+      const need = mw / pv;
+      const rows = [
+        ["평소(전체 정상)", sc.n0Avail],
+        sc.n1 ? ["고장대비(N-1) 정격", sc.n1.base - S] : null,
+        sc.n1 ? ["고장대비(N-1) 단기비상", sc.n1.emerS - S] : null,
+        sc.n1 ? ["고장대비(N-1) 장기비상", sc.n1.emerL - S] : null
+      ].filter(Boolean);
+      const ok = sc.n1 ? (sc.n1.base - S) >= need : sc.n0Avail >= need;
+      box.innerHTML = '<div class="verdict '+(ok?'ok':'bad')+'">'+
+        '<div class="title">'+(ok?'✅ 고장대비 기준으로도 충분히 받을 수 있어요':'⚠️ 고장대비 기준으로는 여유가 부족해요')+'</div>'+
+        '희망 수전 용량 '+fmt(mw,2)+' MW ÷ 역률 '+fmt(pv*100,1)+'% = 필요 용량 '+fmt(need,2)+' MVA'+
+        '<ul>'+rows.map(r=>'<li>'+r[0]+': '+fmt(r[1],2)+' MVA 여유 → '+
+          (r[1]>=need ? '충족 (여유 '+fmt(r[1]-need,2)+' MVA)' : '부족 (부족분 '+fmt(need-r[1],2)+' MVA)')+'</li>').join("")+'</ul>'+
+        '</div>';
+    }
+    reqMW.addEventListener("input", update);
+    reqPF.addEventListener("input", update);
+  }
+
+  /* ==================================================================
+     14. 시작 화면 — 계통 전체 개요 (검색 전 기본 표시)
+     ================================================================== */
+  let overviewCache = null;
+  function buildOverview(){
+    if (overviewCache) return overviewCache;
+
+    const totLoad   = Object.values(loadByBus).reduce((a,l)=>a+l.p,0);
+    const totGenCap = genRows.reduce((a,r)=>a+num(r.p_max_mw),0);
+    const totGenOut = genRows.reduce((a,r)=>a+(r.in_service==="1"?num(r.p_mw):0),0);
+    const cnt = {};
+    siteList.forEach(s=>cnt[s.type]=(cnt[s.type]||0)+1);
+
+    const kvCkt = {}, kvLen = {};
+    lineFlows.forEach(f=>{ const k=Math.round(f.kv); kvCkt[k]=(kvCkt[k]||0)+1; kvLen[k]=(kvLen[k]||0)+f.lengthKm; });
+    const kvRows = Object.keys(kvCkt).map(Number).sort((a,b)=>b-a).map(k=>
+      '<tr><td class="name-cell">'+kvBadge(k)+'</td>'+
+      '<td>'+siteList.filter(s=>s.kvList.indexOf(k)>=0).length+'</td>'+
+      '<td>'+kvCkt[k]+'</td><td>'+fmt(kvLen[k],0)+'</td></tr>').join("");
+
+    const topLines = lineFlows.filter(f=>f.inSvc && f.rateA>0 && !f.lowZ)
+      .sort((a,b)=>b.loadPct-a.loadPct).slice(0,10).map(f=>
+        '<tr><td class="name-cell"><div class="lname">'+esc(cleanGroup(f.pn.group))+'</div>'+
+          '<div class="subline">'+esc(f.raw)+'</div></td>'+
+        '<td>'+kvBadge(f.kv)+'</td>'+
+        '<td class="name-cell">'+link(f.fromSite)+' ↔ '+link(f.toSite)+'</td>'+
+        '<td>'+fmt(f.Smax,0)+' / '+fmt(f.rateA,0)+'</td>'+
+        '<td>'+loadBarHtml(f.loadPct)+'</td></tr>').join("");
+
+    const topTr = t2Flows.filter(f=>f.inSvc && f.subtype==="MTr" && f.rateA>0)
+      .slice().sort((a,b)=>b.loadPct-a.loadPct).slice(0,10).map(f=>
+        '<tr><td class="name-cell"><div class="lname">'+esc(f.name)+'</div>'+
+          '<div class="subline">'+esc(f.hvName)+' → '+esc(f.lvName)+'</div></td>'+
+        '<td>'+kvBadge(f.vnHv)+'</td>'+
+        '<td class="name-cell">'+link(f.lvSite)+'</td>'+
+        '<td>'+fmt(f.Smax,0)+' / '+fmt(f.rateA,0)+'</td>'+
+        '<td>'+loadBarHtml(f.loadPct)+'</td></tr>').join("");
+
+    const topCap = siteList.filter(s=>s.loads.length>0)
+      .map(s=>({s:s, c:siteCapacity(s)}))
+      .filter(x=>x.c.units.length>0)
+      .sort((a,b)=>b.c.safeMW-a.c.safeMW).slice(0,10).map(x=>
+        '<tr><td class="name-cell"><div class="lname">'+link(x.s.key)+'</div>'+
+          '<div class="subline">'+esc(x.s.region)+' · '+x.s.kvList.map(kvLabel).join(' / ')+'</div></td>'+
+        '<td>'+fmt(x.c.sc.totalBase,0)+'</td><td>'+fmt(x.c.S,0)+'</td>'+
+        '<td class="pct ok">'+fmt(x.c.safeMW,1)+' MW</td>'+
+        '<td>'+loadBarHtml(x.c.maxPct)+'</td></tr>').join("");
+
+    const vv = Object.values(busInfo).filter(b=>b.inService && (b.vm>b.vmax || b.vm<b.vmin)).length;
+    const offLines = lineFlows.filter(f=>!f.inSvc).length;
+    const offShunt = shuntRows.filter(r=>r.in_service!=="1").length;
+    const offGen   = genRows.filter(r=>r.in_service!=="1").length;
+
+    overviewCache =
+      '<div class="hero sw">'+
+        '<div class="tag">전국 계통 스냅샷 개요</div>'+
+        '<div class="headline">검색창에 <b>변전소 · 발전소 · 발전기명 · 모선번호</b>를 입력하세요</div>'+
+        '<div class="sub">총 '+siteList.length+'개소를 조회할 수 있습니다 — 변전소 '+(cnt['변전소']||0)+
+          ' · 발전소 '+(cnt['발전소']||0)+' · 변환소 '+(cnt['변환소']||0)+
+          ' · 개폐/연계 '+(cnt['개폐/연계']||0)+'. 검색창을 클릭하면 전체 목록이 열리고, 아래 표의 이름을 눌러 바로 이동할 수도 있습니다.</div>'+
+        '<div class="hero-kpis">'+
+          '<div class="hkpi"><div class="l">총 등록부하</div><div class="v">'+fmt(totLoad/1000,1)+'<small> GW</small></div></div>'+
+          '<div class="hkpi"><div class="l">총 발전설비</div><div class="v">'+fmt(totGenCap/1000,1)+'<small> GW</small></div></div>'+
+          '<div class="hkpi"><div class="l">현재 발전</div><div class="v">'+fmt(totGenOut/1000,1)+'<small> GW</small></div></div>'+
+          '<div class="hkpi"><div class="l">교류 송전회선</div><div class="v">'+lineFlows.length+'<small> 회선</small></div></div>'+
+        '</div>'+
+      '</div>'+
+
+      screeningPanelHtml()+
+
+      '<div class="panel">'+
+        '<h2>전압등급별 계통 규모</h2>'+
+        '<div class="h2sub">전압등급별 보유 사업소 수, 회선 수, 긍장 합계입니다.</div>'+
+        '<div class="scrollx"><table><thead><tr><th>전압등급</th><th>보유 사업소</th><th>회선수</th><th>총 긍장(km)</th></tr></thead>'+
+        '<tbody>'+kvRows+'</tbody></table></div>'+
+        '<div class="note">휴전 중 송전회선 '+offLines+'회선 · 정지 발전기 '+offGen+'기 · 개방(예비) 분로뱅크 '+offShunt+
+        '뱅크 · 허용전압 범위를 벗어난 모선 '+vv+'개 · HVDC '+hvdcAll.length+'링크가 데이터에 포함되어 있습니다.</div>'+
+      '</div>'+
+
+      '<div class="panel">'+
+        '<h2>수전 여유 상위 변전소 <span class="cnt">N-1 기준 TOP 10</span></h2>'+
+        '<div class="h2sub">고장 대비(N-1) 정격 기준으로 지금 가장 많이 더 받을 수 있는 변전소입니다. 후보지 1차 스크리닝용 참고값이며, 실제 가능 여부는 전평으로 확정됩니다.</div>'+
+        '<div class="scrollx"><table><thead><tr><th>변전소</th><th>설비용량(MVA)</th><th>현재사용(MVA)</th><th>N-1 여유</th><th>최대 변압기 부하율</th></tr></thead>'+
+        '<tbody>'+topCap+'</tbody></table></div>'+
+      '</div>'+
+
+      '<div class="panel">'+
+        '<h2>송전선로 부하율 상위 <span class="cnt">TOP 10</span></h2>'+
+        '<div class="h2sub">현재 스냅샷에서 가장 무겁게 걸려 있는 회선입니다. 조류값 신뢰도가 낮은 저임피던스 단거리 연결선은 제외했습니다.</div>'+
+        '<div class="scrollx"><table><thead><tr><th>송전선로</th><th>전압</th><th>양단</th><th>조류/정격(MVA)</th><th>부하율</th></tr></thead>'+
+        '<tbody>'+topLines+'</tbody></table></div>'+
+      '</div>'+
+
+      '<div class="panel">'+
+        '<h2>주변압기 부하율 상위 <span class="cnt">TOP 10</span></h2>'+
+        '<div class="h2sub">부하율이 가장 높은 주변압기입니다. 해당 변전소는 신규 수전 여력이 제한적일 수 있습니다.</div>'+
+        '<div class="scrollx"><table><thead><tr><th>변압기</th><th>1차 전압</th><th>변전소</th><th>조류/정격(MVA)</th><th>부하율</th></tr></thead>'+
+        '<tbody>'+topTr+'</tbody></table></div>'+
+      '</div>';
+    return overviewCache;
+  }
+
+  /* ==================================================================
+     14-B. 수전 후보지 스크리닝
+     ================================================================== */
+  const REGIONS = [...new Set(siteList.map(s=>s.region).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+
+  function screeningPanelHtml(){
+    return '<div class="panel">'+
+      '<h2>수전 후보지 스크리닝 <span class="cnt">희망 용량으로 전국 검색</span></h2>'+
+      '<div class="h2sub">받고 싶은 용량과 조건을 넣으면 변압기 N-1 기준으로 수용 가능한 변전소를 전국에서 찾아 순위대로 보여줍니다. '+
+      '선로 N-1 지표는 병렬 회선 1회선 상실 시의 예상 부하율 근사치로, 100%를 넘으면 선로 보강이 함께 필요할 수 있다는 신호입니다.</div>'+
+      '<div class="checkrow">'+
+        '<div class="field"><label>희망 수전 용량 (MW)</label><input type="number" id="scrMW" value="9.9" step="0.1" min="0"></div>'+
+        '<div class="field"><label>가정 역률 cos φ</label><input type="number" id="scrPF" value="0.95" step="0.01" min="0.5" max="1"></div>'+
+        '<div class="field"><label>지역</label><select id="scrRegion"><option value="">전국</option>'+
+          REGIONS.map(r=>'<option value="'+esc(r)+'">'+esc(r)+'</option>').join("")+'</select></div>'+
+        '<div class="field"><label>최소 전압등급</label><select id="scrKv">'+
+          '<option value="0">제한 없음</option><option value="154">154kV 이상</option>'+
+          '<option value="345">345kV 이상</option><option value="765">765kV</option></select></div>'+
+        '<div class="field"><label>정렬</label><select id="scrSort">'+
+          '<option value="margin">여유 큰 순</option><option value="fit">요구용량에 근접한 순</option>'+
+          '<option value="line">선로 여유 좋은 순</option><option value="name">이름순</option></select></div>'+
+      '</div>'+
+      '<div id="scrResult"></div></div>';
+  }
+
+  function runScreening(){
+    const box = document.getElementById("scrResult");
+    if (!box) return;
+    const mw   = parseFloat((document.getElementById("scrMW")||{}).value);
+    const pv   = parseFloat((document.getElementById("scrPF")||{}).value) || 0.95;
+    const reg  = (document.getElementById("scrRegion")||{}).value || "";
+    const minKv= parseFloat((document.getElementById("scrKv")||{}).value) || 0;
+    const sort = (document.getElementById("scrSort")||{}).value || "margin";
+    if (!mw || mw <= 0){ box.innerHTML = '<div class="empty-note">희망 수전 용량을 입력하면 후보 변전소를 찾아드립니다.</div>'; return; }
+    const need = mw / pv;
+
+    const hits = [];
+    siteList.forEach(sx=>{
+      if (!sx.loads.length) return;
+      if (reg && sx.region !== reg) return;
+      if (minKv && sx.maxKv < minKv) return;
+      const c = siteCapacity(sx);
+      if (!c.units.length || !c.sc) return;
+      const margin = c.sc.n1 ? (c.sc.n1.base - c.S) : c.sc.n0Avail;
+      if (margin < need) return;
+      hits.push({s:sx, c:c, margin:margin, ln:siteLineN1(sx), n1based: !!c.sc.n1});
+    });
+
+    if (!hits.length){
+      box.innerHTML = '<div class="verdict bad"><div class="title">⚠️ 조건을 만족하는 변전소가 없습니다</div>'+
+        '희망 용량 '+fmt(mw,2)+' MW ('+fmt(need,2)+' MVA)를 변압기 N-1 기준으로 수용 가능한 변전소를 찾지 못했습니다. '+
+        '용량을 낮추거나 지역·전압등급 조건을 완화해 보세요.</div>';
+      return;
+    }
+
+    hits.sort((a,b)=>{
+      if (sort === "fit")  return (a.margin-need) - (b.margin-need);
+      if (sort === "line") return a.ln.n1Pct - b.ln.n1Pct;
+      if (sort === "name") return a.s.name.localeCompare(b.s.name,'ko');
+      return b.margin - a.margin;
+    });
+
+    const show = hits.slice(0,50);
+    const rows = show.map(h=>{
+      const lnCls = h.ln.n1Pct >= 100 ? 'bad' : (h.ln.n1Pct >= 80 ? 'warn' : 'ok');
+      return '<tr>'+
+        '<td class="name-cell"><div class="lname">'+link(h.s.key)+'</div>'+
+          '<div class="subline">'+esc(h.s.region)+' · '+h.s.kvList.map(kvLabel).join(' / ')+
+          (h.n1based?'':' · <span style="color:var(--warn)">변압기 1대(N-0 기준)</span>')+'</div></td>'+
+        '<td>'+fmt(h.c.sc.totalBase,0)+'<div class="subline">'+h.c.units.length+'대</div></td>'+
+        '<td>'+fmt(h.c.S,0)+'</td>'+
+        '<td class="pct ok">'+fmt(h.margin*h.c.pf,1)+' MW<div class="subline">'+fmt(h.margin,0)+' MVA</div></td>'+
+        '<td>'+loadBarHtml(h.c.maxPct)+'</td>'+
+        '<td><span class="pct '+lnCls+'">'+fmt(h.ln.n1Pct,1)+'%</span>'+
+          '<div class="subline">현재 '+fmt(h.ln.worstPct,1)+'%'+(h.ln.n1Name?' · '+esc(h.ln.n1Name):'')+'</div></td>'+
+        '<td>'+h.s.nCkt+'회선</td></tr>';
+    }).join("");
+
+    const okLine = hits.filter(h=>h.ln.n1Pct < 100).length;
+    box.innerHTML =
+      '<div class="verdict ok"><div class="title">✅ '+hits.length+'개 변전소가 '+fmt(mw,2)+' MW를 수용할 수 있습니다</div>'+
+      '필요 용량 '+fmt(mw,2)+' MW ÷ 역률 '+fmt(pv*100,1)+'% = '+fmt(need,2)+' MVA · '+
+      '이 중 선로 N-1 지표까지 100% 미만인 곳은 '+okLine+'개소입니다.'+
+      (hits.length>50 ? ' 상위 50개소만 표시합니다.' : '')+'</div>'+
+      '<div class="scrollx"><table>'+
+      '<thead><tr><th>변전소</th><th>설비용량(MVA)</th><th>현재사용(MVA)</th><th>변압기 N-1 여유</th>'+
+      '<th>최대 변압기 부하율</th><th>선로 N-1 지표</th><th>접속선로</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  function bindScreening(){
+    ["scrMW","scrPF","scrRegion","scrKv","scrSort"].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el && el.addEventListener){
+        el.addEventListener("input", runScreening);
+        el.addEventListener("change", runScreening);
+      }
+    });
+    runScreening();
+  }
+
+  /* ==================================================================
+     15. 검색 UI
+     ================================================================== */
   const searchInput = document.getElementById("searchInput");
   const suggestBox  = document.getElementById("suggestBox");
   const resultArea  = document.getElementById("resultArea");
@@ -596,6 +1248,12 @@
 
   const FILTERS = ["전체","변전소","발전소","변환소","765kV","345kV"];
   let activeFilter = "전체";
+  function passFilter(s){
+    if (activeFilter === "전체")  return true;
+    if (activeFilter === "765kV") return s.maxKv >= 765;
+    if (activeFilter === "345kV") return s.maxKv >= 345;
+    return s.type === activeFilter;
+  }
   function buildFilterChips(){
     filterChips.innerHTML = "";
     FILTERS.forEach(f=>{
@@ -603,30 +1261,22 @@
       c.className = "chip" + (f===activeFilter ? " on" : "");
       c.textContent = f;
       c.onclick = () => { activeFilter = f; buildFilterChips(); buildQuickChips();
-        if (searchInput.value.trim()) doSearch(); };
+                          if (suggestBox.classList.contains("show")) doSearch(); };
       filterChips.appendChild(c);
     });
-  }
-  function passFilter(s){
-    if (activeFilter === "전체") return true;
-    if (activeFilter === "765kV") return s.maxKv >= 765;
-    if (activeFilter === "345kV") return s.maxKv >= 345;
-    return s.type === activeFilter;
   }
   const seedNames = ["인천복합","금촌","의왕","안산","성곡","신안성"];
   function buildQuickChips(){
     quickChips.innerHTML = "";
     const found = [];
-    seedNames.forEach(nm => {
-      const hit = siteList.find(s => s.name === nm) || siteList.find(s => s.name.indexOf(nm)>=0);
+    seedNames.forEach(nm=>{
+      const hit = sites[nm] || siteList.find(s=>s.name.indexOf(nm)>=0);
       if (hit && passFilter(hit) && !found.find(f=>f.key===hit.key)) found.push(hit);
     });
-    if (found.length < 6){
-      siteList.filter(passFilter).slice().sort((a,b)=>b.nLines-a.nLines).forEach(s=>{
-        if (found.length<6 && !found.find(f=>f.key===s.key)) found.push(s);
-      });
-    }
-    found.slice(0,6).forEach(s => {
+    siteList.filter(passFilter).slice().sort((a,b)=>b.nCkt-a.nCkt).forEach(s=>{
+      if (found.length<6 && !found.find(f=>f.key===s.key)) found.push(s);
+    });
+    found.slice(0,6).forEach(s=>{
       const c = document.createElement("div");
       c.className = "chip";
       c.textContent = s.name;
@@ -637,467 +1287,91 @@
   buildFilterChips(); buildQuickChips();
 
   let activeIdx = -1, currentMatches = [];
-  function renderSuggest(matches){
+  function renderSuggest(matches, emptyQuery){
     currentMatches = matches; activeIdx = -1;
-    if (matches.length === 0){
+    if (!matches.length){
       suggestBox.innerHTML = '<div class="empty">일치하는 설비가 없습니다.</div>';
       suggestBox.classList.add("show"); return;
     }
-    suggestBox.innerHTML = matches.slice(0,40).map((s,i) =>
+    const head = emptyQuery
+      ? '<div class="suggest-head">전체 '+matches.length+'개소 — 이름을 입력해 좁혀보세요</div>' : '';
+    suggestBox.innerHTML = head + matches.slice(0,60).map((s,i)=>
       '<div class="item" data-idx="'+i+'"><span class="nm">'+esc(s.name)+
       ' <span class="badge type">'+s.type+'</span></span>'+
-      '<span class="meta">'+s.kvList.map(kvLabel).join(' / ')+'<br>'+s.region+' · 선로 '+s.nLines+'회선</span></div>').join("");
+      '<span class="meta">'+s.kvList.map(kvLabel).join(' / ')+'<br>'+esc(s.region)+' · 선로 '+s.nCkt+'회선</span></div>').join("");
     suggestBox.classList.add("show");
-    Array.from(suggestBox.querySelectorAll(".item")).forEach(el => {
-      el.addEventListener("mousedown", (e) => {
+    Array.from(suggestBox.querySelectorAll(".item")).forEach(el=>{
+      el.addEventListener("mousedown", e=>{
         e.preventDefault();
-        const idx = parseInt(el.getAttribute("data-idx"),10);
-        selectSite(currentMatches[idx].key);
+        const m = currentMatches[parseInt(el.getAttribute("data-idx"),10)];
+        if (m) selectSite(m.key);
       });
     });
   }
   function doSearch(){
     const q = searchInput.value.trim().toLowerCase();
-    if (q.length === 0){ suggestBox.classList.remove("show"); return; }
+    const pool = siteList.filter(passFilter);
+    if (!q){ renderSuggest(pool, true); return; }
     const exact = [], starts = [], contains = [];
-    siteList.forEach(s=>{
-      if (!passFilter(s)) return;
+    pool.forEach(s=>{
       const n = s.name.toLowerCase();
       if (n === q) exact.push(s);
       else if (n.indexOf(q) === 0) starts.push(s);
       else if (s.searchText.indexOf(q) >= 0) contains.push(s);
     });
-    renderSuggest(exact.concat(starts, contains));
+    renderSuggest(exact.concat(starts, contains), false);
   }
   searchInput.addEventListener("input", doSearch);
   searchInput.addEventListener("focus", doSearch);
-  searchInput.addEventListener("keydown", (e) => {
+  searchInput.addEventListener("keydown", e=>{
+    if (e.key === "Escape"){ searchInput.value = ""; suggestBox.classList.remove("show"); return; }
     if (!suggestBox.classList.contains("show")) return;
     const items = Array.from(suggestBox.querySelectorAll(".item"));
     if (e.key === "ArrowDown"){ e.preventDefault(); activeIdx = Math.min(activeIdx+1, items.length-1); }
     else if (e.key === "ArrowUp"){ e.preventDefault(); activeIdx = Math.max(activeIdx-1, 0); }
-    else if (e.key === "Enter"){ e.preventDefault(); if (activeIdx>=0 && currentMatches[activeIdx]) selectSite(currentMatches[activeIdx].key); return; }
-    else return;
-    items.forEach((el,i)=> el.classList.toggle("active", i===activeIdx));
-    if (items[activeIdx]) items[activeIdx].scrollIntoView({block:"nearest"});
+    else if (e.key === "Enter"){
+      e.preventDefault();
+      const pick = activeIdx>=0 ? currentMatches[activeIdx] : currentMatches[0];
+      if (pick) selectSite(pick.key);
+      return;
+    } else return;
+    items.forEach((el,i)=>el.classList.toggle("active", i===activeIdx));
+    if (items[activeIdx] && items[activeIdx].scrollIntoView) items[activeIdx].scrollIntoView({block:"nearest"});
   });
-  document.addEventListener("click", (e) => {
-    if (!suggestBox.contains(e.target) && e.target !== searchInput) suggestBox.classList.remove("show");
+  document.addEventListener("click", e=>{
+    const t = e.target;
+    if (t && t.closest){
+      const a = t.closest(".sitelink");
+      if (a){ e.preventDefault(); selectSite(a.getAttribute("data-site")); return; }
+    }
+    if (suggestBox.contains && !suggestBox.contains(t) && t !== searchInput)
+      suggestBox.classList.remove("show");
   });
-  window.selectSite = selectSite;
 
-  function lineTitle(site, g){
-    let t = cleanGroup(g.g);
-    if (t.indexOf("–") < 0) t = site.name + " – " + g.farSite;
-    if (g.typeLabel === "인출") return t + " 인출선";
-    if (g.typeLabel === "연계") return t + " 연계선";
-    return t + " 송전선로";
-  }
-
-  /* ============ 송전선로 테이블 ============ */
-  function buildLineTable(s){
-    const arr = (linesBySite[s.key] || []).slice();
-    if (arr.length === 0) return '<div class="empty-note">이 설비에 직접 연결된 교류 송전선로 정보가 없습니다.</div>';
-
-    // 그룹핑: 선로그룹명 + 상대사이트 + 근단모선 + 전압
-    const groups = {};
-    arr.forEach(x=>{
-      const key = x.f.pn.group + "|" + x.farSite + "|" + x.nearBus + "|" + Math.round(x.f.kv);
-      if (!groups[key]){
-        groups[key] = { g:x.f.pn.group, kv:x.f.kv, typeLabel:x.f.pn.typeLabel,
-          farSite:x.farSite, farBus:x.farBus, nearBus:x.nearBus, internal:x.internal,
-          lengthKm:x.f.lengthKm, cableKm:x.f.cableKm, rate:x.f.rateA,
-          ckts:[], nIn:0, nOut:0, P:0, Q:0, S:0, maxPct:0, lowZ:false };
-      }
-      const G = groups[key];
-      G.ckts.push(x);
-      if (x.f.lowZ) G.lowZ = true;
-      if (x.f.inSvc){ G.nIn++; G.P += x.P; G.Q += x.Q; G.S += x.S; G.maxPct = Math.max(G.maxPct, x.f.loadPct); }
-      else G.nOut++;
-    });
-
-    const list = Object.values(groups).sort((a,b)=>{
-      if (Math.round(b.kv) !== Math.round(a.kv)) return b.kv - a.kv;
-      return b.maxPct - a.maxPct;
-    });
-
-    // 전압별 섹션
-    const byKv = {};
-    list.forEach(g=>{ const k = Math.round(g.kv); if(!byKv[k]) byKv[k]=[]; byKv[k].push(g); });
-    const kvKeys = Object.keys(byKv).map(Number).sort((a,b)=>b-a);
-
-    let rows = "";
-    kvKeys.forEach(k=>{
-      const gs = byKv[k];
-      const totCkt = gs.reduce((a,g)=>a+g.ckts.length,0);
-      rows += '<tr class="grouphead"><td colspan="8">'+kvLabel(k)+' 계통 · '+gs.length+'개 선로 · 총 '+totCkt+'회선</td></tr>';
-      gs.forEach(g=>{
-        const dir = g.internal ? '<span class="badge dir-int">소내</span>'
-          : (g.P < -0.05 ? '<span class="badge dir-in">유입</span>'
-          : (g.P > 0.05 ? '<span class="badge dir-out">유출</span>' : '<span class="badge dir-int">-</span>'));
-        const nearNm = busInfo[g.nearBus] ? busInfo[g.nearBus].name : g.nearBus;
-        const farNm  = busInfo[g.farBus]  ? busInfo[g.farBus].name  : g.farBus;
-        const cktDetail = g.ckts.map(x =>
-            '<div>'+esc(x.f.raw)+(x.f.pn.ckt?'':' #'+x.f.id)+' &nbsp;|&nbsp; '+(x.f.inSvc?'운전':'<span style="color:var(--danger)">휴전</span>')+
-            ' &nbsp;|&nbsp; P '+fmt(x.P,1)+'MW / Q '+fmt(x.Q,1)+'MVAR / S '+fmt(x.S,1)+'MVA'+
-            ' &nbsp;|&nbsp; 부하율 '+fmt(x.f.loadPct,1)+'%</div>').join("");
-        const lenTxt = fmt(g.lengthKm,1) + (g.cableKm>0 ? '<div class="subline">지중 '+fmt(g.cableKm,1)+'km</div>' : '');
-        rows += '<tr>'+
-          '<td class="name-cell"><div class="lname">'+esc(lineTitle(s, g))+'</div>'+
-            '<div class="subline">'+kvLabel(g.kv)+' '+g.typeLabel+' · 데이터명 '+esc(g.g)+'</div>'+
-            '<div class="subline">'+esc(nearNm)+' ↔ '+esc(farNm)+'</div>'+
-            (g.lowZ ? '<div class="subline" style="color:var(--warn)">※ 임피던스가 극히 작은 단거리 연결선 — 스냅샷 위상각 정밀도 한계로 조류값 신뢰도 낮음</div>' : '')+
-            '<details class="ckt"><summary>회선별 상세 ('+g.ckts.length+'회선)</summary><div class="ckt-list">'+cktDetail+'</div></details>'+
-          '</td>'+
-          '<td>'+kvBadge(g.kv)+'</td>'+
-          '<td class="name-cell"><b>'+esc(g.farSite)+'</b><div class="subline">'+esc(farNm)+' (bus '+g.farBus+')</div></td>'+
-          '<td>'+g.ckts.length+'회선'+(g.nOut>0?'<div class="subline" style="color:var(--danger)">휴전 '+g.nOut+'</div>':'')+
-            '<div class="subline">'+g.typeLabel+'</div></td>'+
-          '<td>'+lenTxt+'</td>'+
-          '<td>'+fmt(g.rate,0)+'<div class="subline">회선당</div></td>'+
-          '<td>'+fmt(Math.abs(g.P),1)+' MW<div class="subline">S '+fmt(g.S,1)+' MVA</div><div class="subline">'+dir+'</div></td>'+
-          '<td>'+loadBarHtml(g.maxPct)+'<div class="subline">최대회선 기준</div></td>'+
-        '</tr>';
-      });
-    });
-
-    const totIn = list.reduce((a,g)=>a + (g.P<0 ? -g.P : 0), 0);
-    const totOut= list.reduce((a,g)=>a + (g.P>0 ?  g.P : 0), 0);
-    const worst = list.reduce((a,g)=>Math.max(a,g.maxPct), 0);
-    const neighbors = [...new Set(list.filter(g=>!g.internal).map(g=>g.farSite))];
-
-    return '<div class="kpi-grid" style="margin-bottom:10px;">'+
-        '<div class="kpi"><div class="lbl">접속 선로</div><div class="val">'+list.length+'<small style="font-size:12px;"> 선로</small></div><div class="sub">'+arr.length+' 회선</div></div>'+
-        '<div class="kpi"><div class="lbl">인접 변전소</div><div class="val">'+neighbors.length+'<small style="font-size:12px;"> 개소</small></div><div class="sub">'+esc(neighbors.slice(0,2).join(', '))+(neighbors.length>2?' 외':'')+'</div></div>'+
-        '<div class="kpi"><div class="lbl">유입 / 유출</div><div class="val">'+fmt(totIn,0)+' / '+fmt(totOut,0)+'</div><div class="sub">MW</div></div>'+
-        '<div class="kpi"><div class="lbl">최대 선로 부하율</div><div class="val '+pctClass(worst)+'">'+fmt(worst,1)+'%</div><div class="sub">회선 기준</div></div>'+
-      '</div>'+
-      '<div class="scrollx"><table>'+
-      '<thead><tr><th>송전선로명</th><th>전압</th><th>상대 변전소</th><th>회선수</th><th>긍장(km)</th><th>정격(MVA)</th><th>현재 조류</th><th>부하율</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody></table></div>';
-  }
-
-  /* ============ 변압기 테이블 ============ */
-  function buildTrafoTable(s){
-    const t2 = (t2BySite[s.key] || []);
-    const t3 = (t3BySite[s.key] || []);
-    if (t2.length === 0 && t3.length === 0) return '<div class="empty-note">이 설비에 등록된 변압기가 없습니다.</div>';
-    let rows = "";
-    t2.slice().sort((a,b)=>b.rateA-a.rateA).forEach(f=>{
-      rows += '<tr'+(f.inSvc?'':' class="removed"')+'>'+
-        '<td class="name-cell"><div class="lname">'+esc(f.name)+'</div><div class="subline">2권선 · '+(f.subtype==='GSU'?'발전기 승압(GSU)':'주변압기')+(f.inSvc?'':' · <span style="color:var(--danger)">휴전</span>')+'</div></td>'+
-        '<td>'+kvBadge(f.vnHv)+' → '+kvBadge(f.vnLv)+'</td>'+
-        '<td class="name-cell">'+esc(f.hvName)+'<div class="subline">→ '+esc(f.lvName)+'</div></td>'+
-        '<td>'+fmt(f.rateA,0)+'<div class="subline">단기 '+fmt(f.rateB,0)+' / 장기 '+fmt(f.rateC,0)+'</div></td>'+
-        '<td>'+fmt(f.Plv,1)+' MW<div class="subline">S '+fmt(f.Smax,1)+' MVA</div></td>'+
-        '<td>'+loadBarHtml(f.loadPct)+'</td></tr>';
-    });
-    t3.forEach(f=>{
-      rows += '<tr'+(f.inSvc?'':' class="removed"')+'>'+
-        '<td class="name-cell"><div class="lname">'+esc(f.name)+'</div><div class="subline">3권선 주변압기'+(f.inSvc?'':' · <span style="color:var(--danger)">휴전</span>')+'</div></td>'+
-        '<td>'+kvBadge(f.vnHv)+' → '+kvBadge(f.vnMv)+' → '+kvBadge(f.vnLv)+'</td>'+
-        '<td class="name-cell">'+esc(f.hvName)+'<div class="subline">'+esc(f.mvName)+' / '+esc(f.lvName)+'</div></td>'+
-        '<td>'+fmt(f.legs.hv.rate,0)+'<div class="subline">MV '+fmt(f.legs.mv.rate,0)+' / LV '+fmt(f.legs.lv.rate,0)+'</div></td>'+
-        '<td>'+fmt(f.legs.mv.P,1)+' MW<div class="subline">MV측 S '+fmt(f.legs.mv.S,1)+' MVA</div></td>'+
-        '<td>'+loadBarHtml(f.maxLoadPct)+'<div class="subline">최대권선</div></td></tr>';
-    });
-    return '<div class="scrollx"><table>'+
-      '<thead><tr><th>변압기명</th><th>전압</th><th>연결 모선</th><th>정격(MVA)</th><th>현재 조류</th><th>부하율</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody></table></div>';
-  }
-
-  /* ============ 발전기 테이블 ============ */
-  function buildGenTable(s){
-    if (s.gens.length === 0) return "";
-    const rows = s.gens.map(g=>
-      '<tr'+(g.inSvc?'':' class="removed"')+'>'+
-      '<td class="name-cell"><div class="lname">'+esc(g.name)+'</div><div class="subline">bus '+g.bus+' · '+(busInfo[g.bus]?kvLabel(busInfo[g.bus].kv):'')+(g.inSvc?'':' · <span style="color:var(--danger)">정지</span>')+'</div></td>'+
-      '<td>'+fmt(g.pmax,1)+'</td>'+
-      '<td>'+fmt(g.inSvc?g.p:0,1)+'</td>'+
-      '<td>'+fmt(g.inSvc?g.q:0,1)+'</td>'+
-      '<td>'+fmt(g.mbase,1)+'</td>'+
-      '<td>'+(g.pmax>0 ? loadBarHtml((g.inSvc?g.p:0)/g.pmax*100) : '-')+'</td></tr>').join("");
-    const onCnt = s.gens.filter(g=>g.inSvc).length;
-    return '<div class="panel">'+
-      '<h2>발전 설비 <span class="cnt">'+s.gens.length+'기 (가동 '+onCnt+'기)</span></h2>'+
-      '<div class="h2sub">이 발전소에 설치된 발전기와 현재 출력입니다. 승압변압기(GSU)를 통해 계통에 연결됩니다.</div>'+
-      '<div class="kpi-grid" style="margin-bottom:10px;">'+
-        '<div class="kpi"><div class="lbl">총 설비용량</div><div class="val">'+fmt(s.genPmax,0)+'</div><div class="sub">MW</div></div>'+
-        '<div class="kpi"><div class="lbl">현재 총 출력</div><div class="val ok">'+fmt(s.genP,0)+'</div><div class="sub">MW</div></div>'+
-        '<div class="kpi"><div class="lbl">이용률</div><div class="val">'+(s.genPmax>0?fmt(s.genP/s.genPmax*100,1):'-')+'%</div><div class="sub">현재 출력 / 설비용량</div></div>'+
-        '<div class="kpi"><div class="lbl">가동 대수</div><div class="val">'+onCnt+' / '+s.gens.length+'</div><div class="sub">기</div></div>'+
-      '</div>'+
-      '<div class="scrollx"><table>'+
-      '<thead><tr><th>발전기</th><th>설비용량(MW)</th><th>현재출력(MW)</th><th>무효(MVAR)</th><th>정격(MVA)</th><th>이용률</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody></table></div></div>';
-  }
-
-  /* ============ 모선 / 보상설비 ============ */
-  function buildBusTable(s){
-    const rows = s.buses.slice().sort((a,b)=>(busInfo[b].kv-busInfo[a].kv)).map(b=>{
-      const bi = busInfo[b];
-      const vOk = !(bi.vm>bi.vmax || bi.vm<bi.vmin);
-      const ld = loadByBus[b];
-      return '<tr><td class="name-cell"><div class="lname">'+esc(bi.name)+'</div><div class="subline">bus '+b+' · '+bi.type+'</div></td>'+
-        '<td>'+kvBadge(bi.kv)+'</td>'+
-        '<td class="'+(vOk?'':'')+'" style="color:'+(vOk?'inherit':'var(--danger)')+'">'+fmt(bi.vm,4)+' pu<div class="subline">'+fmt(bi.vm*bi.kv,1)+' kV</div></td>'+
-        '<td>'+fmt(bi.va_deg,2)+'°</td>'+
-        '<td>'+(ld ? fmt(ld.p,1)+' MW<div class="subline">'+fmt(ld.q,1)+' MVAR</div>' : '-')+'</td></tr>';
-    }).join("");
-    return '<div class="scrollx"><table>'+
-      '<thead><tr><th>모선명</th><th>전압등급</th><th>운전전압</th><th>위상각</th><th>등록부하</th></tr></thead>'+
-      '<tbody>'+rows+'</tbody></table></div>';
-  }
-  function buildCompTable(s){
-    let shunts = [], facts = [];
-    s.buses.forEach(b=>{
-      (shuntByBus[b]||[]).forEach(x=>shunts.push(x));
-      (factsByBus[b]||[]).forEach(x=>facts.push(x));
-    });
-    if (shunts.length===0 && facts.length===0) return "";
-    let html = "";
-    if (shunts.length){
-      const capQ = shunts.filter(x=>x.q<0).reduce((a,x)=>a+Math.abs(x.q),0);
-      const reaQ = shunts.filter(x=>x.q>0).reduce((a,x)=>a+x.q,0);
-      html += '<h3>분로 보상설비 (Shunt)</h3>'+
-        '<div class="h3sub">콘덴서 '+fmt(capQ,0)+' MVAR · 리액터 '+fmt(reaQ,0)+' MVAR — 변압기 무효전력 부담을 줄여 부하율을 낮춥니다.</div>'+
-        '<div class="scrollx"><table><thead><tr><th>설비명</th><th>모선</th><th>구분</th><th>용량(MVAR)</th></tr></thead><tbody>'+
-        shunts.map(x=>'<tr><td class="name-cell">'+esc(x.name)+'</td><td>'+(busInfo[x.bus]?esc(busInfo[x.bus].name):x.bus)+'</td><td>'+(x.kind==='SWITCHED'?'개폐형':'고정형')+'</td><td>'+(x.q<0?'콘덴서 ':'리액터 ')+fmt(Math.abs(x.q),1)+'</td></tr>').join("")+
-        '</tbody></table></div>';
-    }
-    if (facts.length){
-      html += '<h3>FACTS 설비</h3>'+
-        '<div class="h3sub">STATCOM·UPFC 등 능동형 무효전력 제어설비입니다.</div>'+
-        '<div class="scrollx"><table><thead><tr><th>설비명</th><th>모선</th><th>전압목표(pu)</th><th>용량(MVAR)</th></tr></thead><tbody>'+
-        facts.map(x=>'<tr><td class="name-cell">'+esc(x.name)+'</td><td>'+(busInfo[x.bus]?esc(busInfo[x.bus].name):x.bus)+'</td><td>'+fmt(x.vset,3)+'</td><td>±'+fmt(x.shmax,0)+'</td></tr>').join("")+
-        '</tbody></table></div>';
-    }
-    return html;
-  }
-  function buildHvdcBlock(s){
-    const arr = hvdcBySite[s.key] || [];
-    if (!arr.length) return "";
-    return '<h3>HVDC 연계</h3>'+
-      '<div class="h3sub">직류 송전 설비입니다. 교류 조류계산과 별도로 지정 전력을 주고받습니다.</div>'+
-      '<div class="scrollx"><table><thead><tr><th>설비명</th><th>방식</th><th>직류전압</th><th>전송용량</th><th>긍장(km)</th></tr></thead><tbody>'+
-      arr.map(d=>'<tr><td class="name-cell">'+esc(d.name)+'</td><td>'+d.kind+'</td><td>'+fmt(d.kv,0)+' kV</td><td>'+fmt(d.mw,0)+' MW</td><td>'+fmt(d.lengthKm,1)+'</td></tr>').join("")+
-      '</tbody></table></div>';
-  }
-
-  /* ============ 상세 렌더 ============ */
-  function selectSite(key){
-    const s = sites[key];
-    if (!s) return;
-    searchInput.value = s.name;
-    suggestBox.classList.remove("show");
-    window.scrollTo({top:0, behavior:"smooth"});
-
-    const units = unitsForSite(s);
-    const hasRx = units.length > 0;
-
-    const pFlowActual = units.reduce((a,u)=>a+u.flowP,0);
-    const qFlowActual = units.reduce((a,u)=>a+u.flowQ,0);
-    const sFlowVec = Math.sqrt(pFlowActual*pFlowActual + qFlowActual*qFlowActual);
-    const pf = sFlowVec>0 ? Math.abs(pFlowActual)/sFlowVec : 1;
-    const sc = hasRx ? computeScenarios(units, sFlowVec) : null;
-
-    const mainBus = s.buses.map(b=>busInfo[b]).sort((a,b)=>b.kv-a.kv)[0];
-    const kvTxt = s.kvList.map(kvBadge).join("");
-
-    /* --- hero --- */
-    let heroClass = "hero", heroTag = "", headline = "", subline = "", kpis = "";
-    const safeAvailMVA = sc ? (sc.n1 ? (sc.n1.base - sFlowVec) : sc.n0Avail) : 0;
-    const safeAvailMW  = safeAvailMVA * pf;
-    if (hasRx){
-      const heroOk = safeAvailMVA > 0;
-      heroTag = s.type + " · " + s.region + " · " + s.area + " · 모선 " + s.buses.length + "개";
-      headline = heroOk
-        ? '지금 최대 <b>'+fmt(safeAvailMW,1)+' MW</b> ('+fmt(safeAvailMVA,1)+' MVA)까지 새로 받을 수 있어요'
-        : '지금 이 변전소는 새로 받을 수 있는 여유가 <b>부족</b>해요';
-      if (!heroOk) heroClass += " ";
-      subline = (sc.n1 ? "변압기 1대 고장(N-1)까지 대비한 안전 기준" : "설비가 1대뿐이라 N-0(전체 정상) 기준") +
-        ' · 현재 <b>'+fmt(sFlowVec,1)+' MVA</b> ('+fmt(pFlowActual,1)+' MW)를 이미 쓰고 있습니다.';
-      kpis =
-        '<div class="hkpi"><div class="l">수전 변압기</div><div class="v">'+units.length+'<small> 대</small></div></div>'+
-        '<div class="hkpi"><div class="l">설비 총 용량</div><div class="v">'+fmt(sc.totalBase,0)+'<small> MVA</small></div></div>'+
-        '<div class="hkpi"><div class="l">접속 송전선로</div><div class="v">'+(linesBySite[s.key]||[]).length+'<small> 회선</small></div></div>'+
-        '<div class="hkpi"><div class="l">최고 전압등급</div><div class="v">'+kvLabel(s.maxKv)+'</div></div>';
-      if (!heroOk) heroClass = "hero";
-    } else if (s.gens.length > 0){
-      heroClass = "hero gen";
-      heroTag = "발전소 · " + s.region + " · " + s.area + " · 모선 " + s.buses.length + "개";
-      headline = '설비용량 <b>'+fmt(s.genPmax,0)+' MW</b> 발전소 · 현재 '+fmt(s.genP,0)+' MW 발전 중';
-      subline = '발전기 '+s.gens.length+'기 · 승압변압기를 거쳐 '+kvLabel(s.maxKv)+' 계통으로 송전합니다. 아래에서 송출 선로별 부하율을 확인하세요.';
-      kpis =
-        '<div class="hkpi"><div class="l">발전기</div><div class="v">'+s.gens.length+'<small> 기</small></div></div>'+
-        '<div class="hkpi"><div class="l">설비용량</div><div class="v">'+fmt(s.genPmax,0)+'<small> MW</small></div></div>'+
-        '<div class="hkpi"><div class="l">접속 송전선로</div><div class="v">'+(linesBySite[s.key]||[]).length+'<small> 회선</small></div></div>'+
-        '<div class="hkpi"><div class="l">최고 전압등급</div><div class="v">'+kvLabel(s.maxKv)+'</div></div>';
-    } else {
-      heroClass = "hero sw";
-      heroTag = s.type + " · " + s.region + " · " + s.area + " · 모선 " + s.buses.length + "개";
-      const nl = (linesBySite[s.key]||[]).length;
-      headline = kvLabel(s.maxKv)+' 계통 <b>'+s.type+'</b> · 송전선로 '+nl+'회선 접속';
-      subline = '수전 부하가 등록되지 않은 설비입니다. 계통 연계 상태와 선로 부하율 위주로 확인하세요.';
-      kpis =
-        '<div class="hkpi"><div class="l">접속 송전선로</div><div class="v">'+nl+'<small> 회선</small></div></div>'+
-        '<div class="hkpi"><div class="l">변압기</div><div class="v">'+((t2BySite[s.key]||[]).length+(t3BySite[s.key]||[]).length)+'<small> 대</small></div></div>'+
-        '<div class="hkpi"><div class="l">모선</div><div class="v">'+s.buses.length+'<small> 개</small></div></div>'+
-        '<div class="hkpi"><div class="l">최고 전압등급</div><div class="v">'+kvLabel(s.maxKv)+'</div></div>';
-    }
-
-    /* --- 수전 변압기 --- */
-    let rxBlock = "";
-    if (hasRx){
-      const unitRows = units.map((u,i) =>
-        '<tr class="'+(sc.n1 && i===sc.n1.removedIdx ? 'removed' : '')+'">'+
-          '<td class="name-cell"><div class="lname">'+esc(u.name)+'</div><div class="subline">'+u.type+' · '+u.side+'</div></td>'+
-          '<td>'+fmt(u.base,1)+'<div class="subline">단기 '+fmt(u.emerS,0)+' / 장기 '+fmt(u.emerL,0)+'</div></td>'+
-          '<td>'+fmt(u.flowP,1)+' MW<div class="subline">S '+fmt(u.flowS,1)+' MVA</div></td>'+
-          '<td>'+loadBarHtml(u.loadPct)+'</td></tr>').join("");
-      const totLoad = s.loads.reduce((a,l)=>a+l.p,0);
-      const totLoadQ = s.loads.reduce((a,l)=>a+l.q,0);
-      rxBlock =
-        '<div class="panel">'+
-        '<h2>수전 변압기 부하율 <span class="cnt">'+units.length+'대</span></h2>'+
-        '<div class="h2sub">이 변전소에서 실제로 전기를 받아 배전측으로 내리는 변압기입니다. 100%를 넘으면 과부하입니다.</div>'+
-        '<div class="scrollx"><table>'+
-        '<thead><tr><th>변압기</th><th>정격(MVA)</th><th>현재 조류</th><th>부하율</th></tr></thead>'+
-        '<tbody>'+unitRows+'</tbody></table></div>'+
-        '<div class="note">설비 용량 합계 — 정격 '+fmt(sc.totalBase,1)+' MVA · 단기비상 '+fmt(sc.totalEmerS,1)+' MVA · 장기비상 '+fmt(sc.totalEmerL,1)+' MVA<br>'+
-        '등록부하 합계 P '+fmt(totLoad,2)+' MW / Q '+fmt(totLoadQ,2)+' MVAR · 현재 역률 '+fmt(pf*100,1)+'%</div>'+
-        '</div>';
-    }
-
-    /* --- 시나리오 --- */
-    let scenBlock = "";
-    if (hasRx){
-      const n1Block = sc.n1 ?
-        '<div class="scenario-row"><div class="label">평소 (변압기 전체 정상 운전)<span class="desc">설비를 100% 다 쓸 때의 이론상 최대 여유</span></div>'+
-          '<div class="figs"><div class="mva">'+fmt(sc.n0Avail,2)+' MVA</div><div class="mw">≈ '+fmt(sc.n0Avail*pf,2)+' MW</div></div></div>'+
-        '<div class="scenario-row"><div class="label">고장 대비 · 정격 기준 ('+esc(sc.n1.removedName)+' 1대 정지)<span class="desc">가장 큰 변압기 1대가 고장나도 나머지로 버티는 여유 — 실무 안전 기준</span></div>'+
-          '<div class="figs"><div class="mva">'+fmt(sc.n1.base - sFlowVec,2)+' MVA</div><div class="mw">≈ '+fmt((sc.n1.base - sFlowVec)*pf,2)+' MW</div></div></div>'+
-        '<div class="scenario-row"><div class="label">고장 대비 · 단기 비상정격<span class="desc">고장 시 잠깐 정격을 초과해 견디는 범위까지 활용</span></div>'+
-          '<div class="figs"><div class="mva">'+fmt(sc.n1.emerS - sFlowVec,2)+' MVA</div><div class="mw">≈ '+fmt((sc.n1.emerS - sFlowVec)*pf,2)+' MW</div></div></div>'+
-        '<div class="scenario-row"><div class="label">고장 대비 · 장기 비상정격<span class="desc">더 긴 시간 버티는 장기 비상정격까지 활용 (가장 낙관적 상한)</span></div>'+
-          '<div class="figs"><div class="mva">'+fmt(sc.n1.emerL - sFlowVec,2)+' MVA</div><div class="mw">≈ '+fmt((sc.n1.emerL - sFlowVec)*pf,2)+' MW</div></div></div>'
-        :
-        '<div class="scenario-row"><div class="label">평소 (변압기 전체 정상 운전)<span class="desc">설비를 100% 다 쓸 때의 이론상 최대 여유</span></div>'+
-          '<div class="figs"><div class="mva">'+fmt(sc.n0Avail,2)+' MVA</div><div class="mw">≈ '+fmt(sc.n0Avail*pf,2)+' MW</div></div></div>'+
-        '<div class="scenario-row"><div class="label">고장 대비 여유 계산 불가<span class="desc">수전 변압기가 1대뿐이라 고장 시 대체 설비가 없습니다.</span></div>'+
-          '<div class="figs"><div class="mva">-</div></div></div>';
-      function kpiClass(v){ return v >= 0 ? (v > sc.totalBase*0.15 ? 'ok' : 'warn') : 'bad'; }
-      const maxPct = Math.max.apply(null, units.map(u=>u.loadPct));
-      scenBlock =
-        '<div class="panel">'+
-        '<h2>수전 가능 여유 용량 시나리오</h2>'+
-        '<div class="h2sub">상황별로 얼마나 더 받을 수 있는지 4가지 기준으로 보여드립니다.</div>'+
-        '<div class="kpi-grid" style="margin-bottom:4px;">'+
-          '<div class="kpi"><div class="lbl">평소 여유</div><div class="val '+kpiClass(sc.n0Avail)+'">'+fmt(sc.n0Avail,1)+' MVA</div><div class="sub">≈ '+fmt(sc.n0Avail*pf,1)+' MW</div></div>'+
-          '<div class="kpi"><div class="lbl">고장대비(N-1) 정격 여유</div><div class="val '+(sc.n1 ? kpiClass(sc.n1.base - sFlowVec) : '')+'">'+(sc.n1 ? fmt(sc.n1.base - sFlowVec,1)+' MVA' : '-')+'</div><div class="sub">'+(sc.n1 ? '≈ '+fmt((sc.n1.base-sFlowVec)*pf,1)+' MW' : '변압기 1대뿐')+'</div></div>'+
-          '<div class="kpi"><div class="lbl">최대 부하율 변압기</div><div class="val '+pctClass(maxPct)+'">'+fmt(maxPct,1)+'%</div><div class="sub">현재 운전 상태</div></div>'+
-          '<div class="kpi"><div class="lbl">역률(현재)</div><div class="val">'+fmt(pf*100,1)+'%</div><div class="sub">P/S 기준</div></div>'+
-        '</div>'+
-        '<div class="scenario">'+n1Block+'</div>'+
-        '<h3>희망 수전 용량 검토</h3>'+
-        '<div class="h3sub">받고 싶은 용량을 입력하면 시나리오별로 충분한지 바로 확인해 드립니다.</div>'+
-        '<div class="checkrow">'+
-          '<div class="field"><label>희망 수전 용량 (MW)</label><input type="number" id="reqMW" placeholder="예: 9.9" step="0.1" min="0"></div>'+
-          '<div class="field"><label>가정 역률 cos φ</label><input type="number" id="reqPF" value="0.95" step="0.01" min="0.5" max="1"></div>'+
-        '</div><div id="verdictBox"></div>'+
-        '</div>';
-    }
-
-    /* --- assemble --- */
-    resultArea.innerHTML =
-      '<div class="'+heroClass+'">'+
-        '<div class="tag">'+esc(heroTag)+'</div>'+
-        '<div class="headline">'+headline+'</div>'+
-        '<div class="sub">'+subline+'</div>'+
-        '<div class="hero-kpis">'+kpis+'</div>'+
-      '</div>'+
-
-      '<div class="panel">'+
-        '<h2>접속 송전선로 <span class="cnt">'+(linesBySite[s.key]||[]).length+'회선</span></h2>'+
-        '<div class="h2sub">'+esc(s.name)+'의 각 모선에 연결된 송전선로입니다. 선로명 · 전압 · 상대 변전소 · 회선수 · 긍장 · 정격 · 현재 조류 · 부하율을 전압등급별로 정리했습니다. 방향은 이 설비 기준(유입 = 받는 중, 유출 = 보내는 중)입니다.</div>'+
-        buildLineTable(s)+
-        buildHvdcBlock(s)+
-      '</div>'+
-
-      rxBlock +
-      buildGenTable(s) +
-
-      '<div class="panel">'+
-        '<h2>변압기 설비 <span class="cnt">'+((t2BySite[s.key]||[]).length+(t3BySite[s.key]||[]).length)+'대</span></h2>'+
-        '<div class="h2sub">이 설비에 설치된 모든 변압기(주변압기·승압변압기 포함)의 정격과 현재 부하율입니다.</div>'+
-        buildTrafoTable(s)+
-        buildCompTable(s)+
-      '</div>'+
-
-      scenBlock +
-
-      '<div class="panel">'+
-        '<h2>모선 현황 <span class="cnt">'+s.buses.length+'개</span></h2>'+
-        '<div class="h2sub">이 설비를 구성하는 모선의 운전전압과 위상각입니다. 허용범위(0.95~1.05pu)를 벗어나면 붉게 표시됩니다.</div>'+
-        buildBusTable(s)+
-        '<p class="note">'+
-        '※ 조류(P·Q·S)는 계통 상태추정 스냅샷의 모선 전압·위상각으로부터 표준 조류계산식으로 직접 산출한 값이며, 무효보상설비 등의 영향으로 등록 부하량과 차이가 날 수 있습니다. '+
-        '선로 부하율은 회선별 양단 조류 중 큰 값 / 상시정격(rate A) 기준입니다. '+
-        '고장대비(N-1)는 가장 용량이 큰 변압기 1대가 멈춘다고 가정한 정적 점검이며, 실제 고장 시 조류 재분배·열적 여유·계통 안정도는 반영하지 않습니다. '+
-        '3권선 변압기는 별도 비상정격이 없어 정격을 그대로 적용했습니다. 22.9kV급 배전선로 회로 정보는 포함되어 있지 않아 배전측 여유는 변압기 저압단 부하율로 갈음합니다. '+
-        '최종 수전 가능 용량은 KEPCO 전력계통영향평가(전평) 및 N-1 고장계산으로 확정됩니다.'+
-        '</p>'+
-      '</div>';
-
-    /* --- verdict --- */
-    if (hasRx){
-      const reqMW = document.getElementById("reqMW");
-      const reqPF = document.getElementById("reqPF");
-      function updateVerdict(){
-        const box = document.getElementById("verdictBox");
-        const mw = parseFloat(reqMW.value);
-        const pfv = parseFloat(reqPF.value) || 0.95;
-        if (!mw || mw <= 0){ box.innerHTML = ""; return; }
-        const reqMVA = mw / pfv;
-        const rows = [
-          ["평소(전체 정상)", sc.n0Avail],
-          sc.n1 ? ["고장대비(N-1) 정격", sc.n1.base - sFlowVec] : null,
-          sc.n1 ? ["고장대비(N-1) 단기비상", sc.n1.emerS - sFlowVec] : null,
-          sc.n1 ? ["고장대비(N-1) 장기비상", sc.n1.emerL - sFlowVec] : null
-        ].filter(Boolean);
-        const overallOk = sc.n1 ? (sc.n1.base - sFlowVec) >= reqMVA : (sc.n0Avail >= reqMVA);
-        box.innerHTML =
-          '<div class="verdict '+(overallOk ? 'ok' : 'bad')+'">'+
-          '<div class="title">'+(overallOk ? '✅ 고장대비 기준으로도 충분히 받을 수 있어요' : '⚠️ 고장대비 기준으로는 여유가 부족해요')+'</div>'+
-          '희망 수전 용량 '+fmt(mw,2)+' MW ÷ 역률 '+fmt(pfv*100,1)+'% = 필요 용량 '+fmt(reqMVA,2)+' MVA'+
-          '<ul>'+rows.map(r => '<li>'+r[0]+': '+fmt(r[1],2)+' MVA 여유 → '+(r[1] >= reqMVA ? '충족 (여유 '+fmt(r[1]-reqMVA,2)+' MVA)' : '부족 (부족분 '+fmt(reqMVA-r[1],2)+' MVA)')+'</li>').join("")+'</ul>'+
-          '</div>';
-      }
-      reqMW.addEventListener("input", updateVerdict);
-      reqPF.addEventListener("input", updateVerdict);
-    }
-  }
-
-  /* ============ footer stats ============ */
+  /* ==================================================================
+     16. 푸터 / 초기 렌더
+     ================================================================== */
   const typeCnt = {};
-  siteList.forEach(s=>{ typeCnt[s.type] = (typeCnt[s.type]||0)+1; });
+  siteList.forEach(s=>typeCnt[s.type]=(typeCnt[s.type]||0)+1);
   document.getElementById("footStat").innerHTML =
     '검색 대상 설비 '+siteList.length+'개소 — 변전소 '+(typeCnt['변전소']||0)+
     ' · 발전소 '+(typeCnt['발전소']||0)+' · 변환소 '+(typeCnt['변환소']||0)+
     ' · 개폐/연계 '+(typeCnt['개폐/연계']||0)+'<br>'+
     '내장 데이터: bus '+busRows.length+' · line '+lineRows.length+' · trafo2w '+t2Rows.length+
     ' · trafo3w '+t3Rows.length+' · gen '+genRows.length+' · load '+loadRows.length+
-    ' · shunt '+shuntRows.length+' · facts '+factsRows.length+' · HVDC '+(Object.keys(dcSeen).length+vscRows.length)+'<br>'+
+    ' · shunt '+shuntRows.length+' · facts '+factsRows.length+' · HVDC '+hvdcAll.length+'<br>'+
     '계통 상태추정 스냅샷(정적) 기준 · System base 100 MVA';
 
-  /* 디버그/검증용 내부 핸들 */
-  window.__grid = { busInfo, sites, siteOfBus, lineFlows, t2Flows, t3Flows,
-                    loadByBus, genByBus, linesBySite, t2BySite, t3BySite, shuntByBus, siteList };
+  /* 디버그 / 검증용 핸들 */
+  window.__grid = { busInfo, sites, siteOfBus, siteList, lineFlows, t2Flows, t3Flows,
+                    loadByBus, genByBus, shuntByBus, factsByBus,
+                    linesBySite, t2BySite, t3BySite, unitsByBus, hvdcAll,
+                    siteCapacity, siteLineN1, buildOverview, runScreening };
+  window.selectSite  = selectSite;
+  window.showOverview = function(){ searchInput.value = ""; resultArea.innerHTML = buildOverview(); bindScreening(); };
 
-  /* ============ 초기 화면 ============ */
-  const initial = sites["인천복합"] || siteList[0];
-  if (initial) selectSite(initial.key);
-
+  resultArea.innerHTML = buildOverview();   // 초기 화면: 검색창 빈칸 + 전체 개요
+  bindScreening();
 })();
 
 </script>
